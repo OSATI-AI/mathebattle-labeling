@@ -19,15 +19,17 @@ test.describe('Full Labeling Workflow E2E', () => {
     await page.waitForSelector('text=/Task \\d+ of \\d+/', { timeout: 15000 });
   });
 
-  test('complete labeling workflow: label task, navigate, and verify persistence', async ({ page }) => {
+  test('label persistence: verify selections are preserved when navigating back to labeled task', async ({ page }) => {
     // Step 1: Wait for first task to fully load
     console.log('Step 1: Waiting for task to load...');
-    await page.waitForSelector('text=1. Select Domain', { timeout: 10000 });
+    await expect(page.locator('text=1. Select Domain')).toBeVisible({ timeout: 30000 });
     await page.waitForTimeout(2000); // Wait for images to load
-    
+
     // Get the first task ID for later verification
-    const taskHeader = await page.locator('h2:has-text("Task #")').first().textContent();
-    const firstTaskId = taskHeader?.match(/Task #(\d+)/)?.[1];
+    const taskHeader = await page.locator('h2').filter({ hasText: /Task #\d+/ }).first();
+    await expect(taskHeader).toBeVisible({ timeout: 10000 });
+    const firstTaskText = await taskHeader.textContent();
+    const firstTaskId = firstTaskText?.match(/Task #(\d+)/)?.[1];
     console.log(`First task ID: ${firstTaskId}`);
     expect(firstTaskId).toBeTruthy();
 
@@ -80,10 +82,22 @@ test.describe('Full Labeling Workflow E2E', () => {
     const submitButton = page.locator('button:has-text("Submit Label")');
     await expect(submitButton).toBeEnabled();
     await submitButton.click();
-    
+
     // Wait for submission to complete and page to navigate to next task
-    await page.waitForTimeout(2000);
-    
+    // Wait for the task header to change
+    await page.waitForFunction(
+      (expectedId) => {
+        const header = document.querySelector('h2');
+        const text = header?.textContent || '';
+        const match = text.match(/Task #(\d+)/);
+        const currentId = match?.[1];
+        console.log(`Checking task ID: ${currentId} (expecting different from ${expectedId})`);
+        return currentId && currentId !== expectedId;
+      },
+      firstTaskId,
+      { timeout: 10000 }
+    );
+
     // Verify we're on a different task (task number should have changed)
     const newTaskHeader = await page.locator('h2:has-text("Task #")').first().textContent();
     const secondTaskId = newTaskHeader?.match(/Task #(\d+)/)?.[1];

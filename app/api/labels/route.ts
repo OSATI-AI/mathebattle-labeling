@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { put } from '@vercel/blob';
+import { put, head } from '@vercel/blob';
 import { Label } from '@/lib/types';
 
 /**
@@ -72,12 +72,17 @@ export async function POST(request: Request) {
         });
       }
 
-      // Try to fetch existing content from Blob
-      const blobUrl = `https://${process.env.BLOB_READ_WRITE_TOKEN}.public.blob.vercel-storage.com/${filename}`;
-      const response = await fetch(blobUrl);
+      // Try to fetch existing content from Blob using proper SDK
+      try {
+        const blobMetadata = await head(filename);
+        const response = await fetch(blobMetadata.downloadUrl);
 
-      if (response.ok) {
-        existingContent = await response.text();
+        if (response.ok) {
+          existingContent = await response.text();
+        }
+      } catch (blobError) {
+        // Blob doesn't exist yet, that's fine - we'll create it
+        console.log('No existing blob found, creating new one');
       }
     } catch (error) {
       // File doesn't exist yet, that's okay
@@ -166,38 +171,48 @@ export async function GET(request: Request) {
 
     // Read from Vercel Blob
     const filename = `labels/labeler_${labelerId}.jsonl`;
-    const blobUrl = `https://${process.env.BLOB_READ_WRITE_TOKEN}.public.blob.vercel-storage.com/${filename}`;
 
-    const response = await fetch(blobUrl);
+    try {
+      // Check if blob exists and get its metadata
+      const blobMetadata = await head(filename);
 
-    if (!response.ok) {
-      // File doesn't exist yet - return empty
+      // Fetch the blob content using the download URL
+      const response = await fetch(blobMetadata.downloadUrl);
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch blob: ${response.statusText}`);
+      }
+
+      const content = await response.text();
+      const labels = content
+        .split('\n')
+        .filter(line => line.trim())
+        .map(line => JSON.parse(line));
+
+      return NextResponse.json({
+        success: true,
+        labels,
+        labeled_task_ids: labels.map((l: Label) => l.task_id),
+        count: labels.length,
+      });
+    } catch (error) {
+      console.error('Error reading labels:', error);
+      // Return empty on error (file might not exist yet)
       return NextResponse.json({
         success: true,
         labels: [],
         labeled_task_ids: [],
       });
     }
-
-    const content = await response.text();
-    const labels = content
-      .split('\n')
-      .filter(line => line.trim())
-      .map(line => JSON.parse(line));
-
-    return NextResponse.json({
-      success: true,
-      labels,
-      labeled_task_ids: labels.map((l: Label) => l.task_id),
-      count: labels.length,
-    });
   } catch (error) {
-    console.error('Error reading labels:', error);
-    // Return empty on error (file might not exist yet)
-    return NextResponse.json({
-      success: true,
-      labels: [],
-      labeled_task_ids: [],
-    });
+    console.error('Unexpected error in GET /api/labels:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Failed to fetch labels',
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
+    );
   }
 }
