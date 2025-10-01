@@ -6,7 +6,7 @@
  * Make sure BLOB_READ_WRITE_TOKEN environment variable is set
  */
 
-import { uploadDatabaseToBlob } from '../lib/database-init';
+import { uploadDatabaseToBlob } from '../lib/database-init.js';
 
 async function main() {
   try {

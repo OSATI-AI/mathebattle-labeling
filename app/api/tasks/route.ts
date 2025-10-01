@@ -3,6 +3,10 @@ import { TaskLoader } from '@/lib/data';
 import { seededShuffle } from '@/lib/shuffle';
 import { ensureDatabaseExists } from '@/lib/database-init';
 
+// Force dynamic rendering - do not pre-render this route
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 /**
  * GET /api/tasks
  *
