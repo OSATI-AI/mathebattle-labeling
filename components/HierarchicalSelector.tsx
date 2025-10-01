@@ -77,9 +77,10 @@ export default function HierarchicalSelector({
     loadDomains();
   }, []);
 
-  // Sync internal state when initial props change (including clearing for unlabeled tasks)
+  // Initialize state from props on mount only (component remounts via key prop when task changes)
   useEffect(() => {
-    // Always sync with prop values, including empty arrays for unlabeled tasks
+    // Set initial values - this only runs on mount due to empty dependency array
+    // Component is remounted when task changes (via key prop), so this is sufficient
     setSelectedDomains(initialDomains || []);
     setSelectedClusters(initialClusters || []);
 
@@ -90,7 +91,8 @@ export default function HierarchicalSelector({
       setSelectedStandards([]);
       setRankedStandards([]);
     }
-  }, [initialDomains, initialClusters, initialStandards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount - component remounts when task changes
 
   // Update parent component when selection changes
   useEffect(() => {

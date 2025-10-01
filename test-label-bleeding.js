@@ -33,7 +33,7 @@ const { chromium } = require('@playwright/test');
     console.log('Selecting APR domain on Task 1...');
     const aprDomain = page.locator('button').filter({ hasText: /^APR/ }).first();
     await aprDomain.click();
-    await page.waitForTimeout(2000);
+    await page.waitForTimeout(3000);  // Wait longer for React state to update
 
     // Check that APR is selected
     const aprClasses = await aprDomain.getAttribute('class');
