@@ -77,6 +77,20 @@ export default function HierarchicalSelector({
     loadDomains();
   }, []);
 
+  // Sync internal state when initial props change (for navigating to labeled tasks)
+  useEffect(() => {
+    if (initialDomains && initialDomains.length > 0) {
+      setSelectedDomains(initialDomains);
+    }
+    if (initialClusters && initialClusters.length > 0) {
+      setSelectedClusters(initialClusters);
+    }
+    if (initialStandards && initialStandards.length > 0) {
+      setSelectedStandards(initialStandards.map(s => s.standard_id));
+      setRankedStandards(initialStandards);
+    }
+  }, [initialDomains, initialClusters, initialStandards]);
+
   // Update parent component when selection changes
   useEffect(() => {
     onSelectionComplete({

@@ -11,8 +11,29 @@ export class StandardsNavigator {
   constructor(jsonlPath: string) {
     this.standards = new Map();
 
-    // Resolve path relative to project root
-    const resolvedPath = path.resolve(process.cwd(), jsonlPath);
+    // Try multiple paths for Vercel compatibility
+    let resolvedPath = path.resolve(process.cwd(), jsonlPath);
+
+    // If file doesn't exist, try alternate paths
+    if (!fs.existsSync(resolvedPath)) {
+      // Try public directory (static files)
+      const publicPath = path.resolve(process.cwd(), 'public', jsonlPath);
+      if (fs.existsSync(publicPath)) {
+        resolvedPath = publicPath;
+      } else {
+        // Try .next/server path (where we copy files during build)
+        const serverPath = path.resolve(process.cwd(), '.next/server', jsonlPath);
+        if (fs.existsSync(serverPath)) {
+          resolvedPath = serverPath;
+        } else {
+          // Try looking in parent directory (for Vercel serverless)
+          const parentPath = path.resolve(process.cwd(), '..', jsonlPath);
+          if (fs.existsSync(parentPath)) {
+            resolvedPath = parentPath;
+          }
+        }
+      }
+    }
 
     // Read and parse JSONL file
     const fileContent = fs.readFileSync(resolvedPath, 'utf-8');

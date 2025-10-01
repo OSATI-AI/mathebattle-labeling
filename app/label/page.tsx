@@ -219,11 +219,26 @@ export default function LabelPage() {
 
   const handlePrevious = () => {
     if (currentTaskIndex > 0) {
-      setCurrentTaskIndex(currentTaskIndex - 1);
-      // Clear selections
-      setSelectedDomains([]);
-      setSelectedClusters([]);
-      setRankedStandards([]);
+      const newIndex = currentTaskIndex - 1;
+      const previousTask = tasks[newIndex];
+
+      setCurrentTaskIndex(newIndex);
+
+      // If task is already labeled, populate selections from existing label
+      if (previousTask && labeledTaskIds.has(previousTask.task_id)) {
+        const existingLabel = labels.find(l => l.task_id === previousTask.task_id);
+        if (existingLabel) {
+          setSelectedDomains(existingLabel.selected_domains);
+          setSelectedClusters(existingLabel.selected_clusters);
+          setRankedStandards(existingLabel.selected_standards);
+        }
+      } else {
+        // Clear selections for unlabeled tasks
+        setSelectedDomains([]);
+        setSelectedClusters([]);
+        setRankedStandards([]);
+      }
+
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -231,11 +246,26 @@ export default function LabelPage() {
 
   const handleNext = () => {
     if (currentTaskIndex < tasks.length - 1) {
-      setCurrentTaskIndex(currentTaskIndex + 1);
-      // Clear selections
-      setSelectedDomains([]);
-      setSelectedClusters([]);
-      setRankedStandards([]);
+      const newIndex = currentTaskIndex + 1;
+      const nextTask = tasks[newIndex];
+
+      setCurrentTaskIndex(newIndex);
+
+      // If task is already labeled, populate selections from existing label
+      if (nextTask && labeledTaskIds.has(nextTask.task_id)) {
+        const existingLabel = labels.find(l => l.task_id === nextTask.task_id);
+        if (existingLabel) {
+          setSelectedDomains(existingLabel.selected_domains);
+          setSelectedClusters(existingLabel.selected_clusters);
+          setRankedStandards(existingLabel.selected_standards);
+        }
+      } else {
+        // Clear selections for unlabeled tasks
+        setSelectedDomains([]);
+        setSelectedClusters([]);
+        setRankedStandards([]);
+      }
+
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
