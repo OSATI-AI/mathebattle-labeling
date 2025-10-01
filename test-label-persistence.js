@@ -19,15 +19,9 @@ const { chromium } = require('@playwright/test');
     await page.goto(url, { timeout: 60000, waitUntil: 'networkidle' });
     console.log('✓ Page loaded');
 
-    // Wait for React to hydrate
-    await page.waitForTimeout(3000);
-
-    // Step 2: Get first task ID
+    // Step 2: Wait for task to load - production deployment takes ~10 seconds
     const taskHeader = await page.locator('h2').filter({ hasText: /Task #\d+/ }).first();
-    const visible = await taskHeader.isVisible();
-    if (!visible) {
-      throw new Error('Task header not visible');
-    }
+    await taskHeader.waitFor({ state: 'visible', timeout: 45000 });
     const firstTaskText = await taskHeader.textContent();
     const firstTaskId = firstTaskText?.match(/Task #(\d+)/)?.[1];
     console.log(`✓ First task ID: ${firstTaskId}`);

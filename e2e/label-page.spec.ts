@@ -31,21 +31,18 @@ test.describe('Label Page E2E Tests', () => {
     // Wait for tasks to load
     await page.waitForSelector('text=/Task \\d+ of \\d+/', { timeout: 15000 });
 
-    // Wait for loading to finish
-    await page.waitForTimeout(3000);
+    // Wait for actual images to appear (production takes ~10 seconds to load tasks)
+    const taskImage = page.locator('img[alt="Task"]');
+    const solutionImage = page.locator('img[alt="Solution"]');
+
+    await expect(taskImage).toBeVisible({ timeout: 45000 });
+    await expect(solutionImage).toBeVisible({ timeout: 45000 });
 
     // Should NOT show placeholder messages
     const noTaskImage = page.locator('text=No task image');
     const noSolutionImage = page.locator('text=No solution image');
     await expect(noTaskImage).not.toBeVisible();
     await expect(noSolutionImage).not.toBeVisible();
-
-    // Wait for actual images to appear
-    const taskImage = page.locator('img[alt="Task"]');
-    const solutionImage = page.locator('img[alt="Solution"]');
-
-    await expect(taskImage).toBeVisible({ timeout: 30000 });
-    await expect(solutionImage).toBeVisible({ timeout: 30000 });
 
     // Verify images have actual base64 data
     const taskSrc = await taskImage.getAttribute('src');
@@ -67,11 +64,11 @@ test.describe('Label Page E2E Tests', () => {
 
     // Check that domains are available
     const domainsHeading = page.locator('text=1. Select Domain');
-    await expect(domainsHeading).toBeVisible();
+    await expect(domainsHeading).toBeVisible({ timeout: 15000 });
 
-    // Should have domain buttons (not checkboxes - interface uses buttons)
-    const domainButton = page.locator('button').filter({ hasText: /^[A-Z]+$/ }).first();
-    await expect(domainButton).toBeVisible();
+    // Should have domain buttons - look for APR domain as example
+    const domainButton = page.locator('button').filter({ hasText: /^APR/ }).first();
+    await expect(domainButton).toBeVisible({ timeout: 15000 });
   });
 
   test('should show clusters when domain is selected', async ({ page }) => {
@@ -103,16 +100,16 @@ test.describe('Label Page E2E Tests', () => {
   test('should allow selecting and ranking standards', async ({ page }) => {
     // Wait for page to load
     await page.waitForSelector('text=/Task \\d+ of \\d+/', { timeout: 15000 });
-    await page.waitForSelector('text=1. Select Domain', { timeout: 5000 });
+    await page.waitForSelector('text=1. Select Domain', { timeout: 15000 });
 
     // Select a domain (using button, not checkbox)
     const firstDomainButton = page.locator('button').filter({ hasText: /^APR/ }).first();
-    await expect(firstDomainButton).toBeVisible({ timeout: 10000 });
+    await expect(firstDomainButton).toBeVisible({ timeout: 15000 });
     await firstDomainButton.click();
     await page.waitForTimeout(1000);
 
-    // Check standards section exists
-    const standardsHeading = page.locator('text=3. Select and Rank Standard');
-    await expect(standardsHeading).toBeVisible();
+    // Check standards section exists (use actual text from component)
+    const standardsHeading = page.locator('text=3. Select Standard');
+    await expect(standardsHeading).toBeVisible({ timeout: 10000 });
   });
 });
