@@ -50,6 +50,11 @@ export default function LabelPage() {
   const [selectedClusters, setSelectedClusters] = useState<string[]>([]);
   const [rankedStandards, setRankedStandards] = useState<RankedStandard[]>([]);
 
+  // Initial values for HierarchicalSelector (calculated when task loads)
+  const [initialDomainsForTask, setInitialDomainsForTask] = useState<string[]>([]);
+  const [initialClustersForTask, setInitialClustersForTask] = useState<string[]>([]);
+  const [initialStandardsForTask, setInitialStandardsForTask] = useState<RankedStandard[]>([]);
+
   // Submission state
   const [submitting, setSubmitting] = useState(false);
 
@@ -131,14 +136,30 @@ export default function LabelPage() {
 
       // Check cache first
       if (taskCache.has(taskId)) {
-        setCurrentTask(taskCache.get(taskId)!);
+        const task = taskCache.get(taskId)!;
+        setCurrentTask(task);
         setLoadingTaskImages(false);
+
+        // BUGFIX: Calculate initial values here, when we know the task is correct
+        const isTaskLabeled = labeledTaskIds.has(task.task_id);
+        const taskLabel = isTaskLabeled ? labels.find(label => label.task_id === task.task_id) : undefined;
+        setInitialDomainsForTask(taskLabel?.selected_domains || []);
+        setInitialClustersForTask(taskLabel?.selected_clusters || []);
+        setInitialStandardsForTask(taskLabel?.selected_standards || []);
       } else {
         setLoadingTaskImages(true);
         try {
           const task = await loadTaskImages(taskId);
           if (task) {
             setCurrentTask(task);
+
+            // BUGFIX: Calculate initial values here, when we know the task is correct
+            const isTaskLabeled = labeledTaskIds.has(task.task_id);
+            const taskLabel = isTaskLabeled ? labels.find(label => label.task_id === task.task_id) : undefined;
+            setInitialDomainsForTask(taskLabel?.selected_domains || []);
+            setInitialClustersForTask(taskLabel?.selected_clusters || []);
+            setInitialStandardsForTask(taskLabel?.selected_standards || []);
+
             // Cache the task
             setTaskCache(prev => new Map(prev).set(taskId, task));
           }
@@ -179,7 +200,7 @@ export default function LabelPage() {
     };
 
     loadCurrentTaskImages();
-  }, [currentTaskIndex, tasks, taskCache]);
+  }, [currentTaskIndex, tasks, taskCache, labeledTaskIds, labels]);
 
   // Reset timer when task changes
   useEffect(() => {
@@ -299,20 +320,6 @@ export default function LabelPage() {
     }
   };
 
-  const isCurrentTaskLabeled = currentTask ? labeledTaskIds.has(currentTask.task_id) : false;
-
-  // Get current task's existing label if it's already labeled
-  const currentTaskLabel = currentTask && isCurrentTaskLabeled
-    ? labels.find(label => label.task_id === currentTask.task_id)
-    : undefined;
-
-  // BUGFIX: Calculate initial values based on current task label, not parent state
-  // This prevents state bleeding when navigating between tasks
-  // For unlabeled tasks, explicitly pass empty arrays (not undefined)
-  const initialDomainsForTask = currentTaskLabel?.selected_domains || [];
-  const initialClustersForTask = currentTaskLabel?.selected_clusters || [];
-  const initialStandardsForTask = currentTaskLabel?.selected_standards || [];
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 p-6">
@@ -385,7 +392,7 @@ export default function LabelPage() {
         <TaskDisplay task={currentTask} loading={loadingTaskImages} />
 
         {/* Status indicator */}
-        {isCurrentTaskLabeled && (
+        {currentTask && labeledTaskIds.has(currentTask.task_id) && (
           <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
             ✓ This task has already been labeled by you.
           </div>
