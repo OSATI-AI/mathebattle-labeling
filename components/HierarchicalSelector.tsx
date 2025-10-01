@@ -77,17 +77,18 @@ export default function HierarchicalSelector({
     loadDomains();
   }, []);
 
-  // Sync internal state when initial props change (for navigating to labeled tasks)
+  // Sync internal state when initial props change (including clearing for unlabeled tasks)
   useEffect(() => {
-    if (initialDomains && initialDomains.length > 0) {
-      setSelectedDomains(initialDomains);
-    }
-    if (initialClusters && initialClusters.length > 0) {
-      setSelectedClusters(initialClusters);
-    }
+    // Always sync with prop values, including empty arrays for unlabeled tasks
+    setSelectedDomains(initialDomains || []);
+    setSelectedClusters(initialClusters || []);
+
     if (initialStandards && initialStandards.length > 0) {
       setSelectedStandards(initialStandards.map(s => s.standard_id));
       setRankedStandards(initialStandards);
+    } else {
+      setSelectedStandards([]);
+      setRankedStandards([]);
     }
   }, [initialDomains, initialClusters, initialStandards]);
 
