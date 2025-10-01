@@ -77,23 +77,6 @@ export default function HierarchicalSelector({
     loadDomains();
   }, []);
 
-  // Initialize state from props on mount only (component remounts via key prop when task changes)
-  useEffect(() => {
-    // Set initial values - this only runs on mount due to empty dependency array
-    // Component is remounted when task changes (via key prop), so this is sufficient
-    setSelectedDomains(initialDomains || []);
-    setSelectedClusters(initialClusters || []);
-
-    if (initialStandards && initialStandards.length > 0) {
-      setSelectedStandards(initialStandards.map(s => s.standard_id));
-      setRankedStandards(initialStandards);
-    } else {
-      setSelectedStandards([]);
-      setRankedStandards([]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run on mount - component remounts when task changes
-
   // Update parent component when selection changes
   useEffect(() => {
     onSelectionComplete({
@@ -101,7 +84,7 @@ export default function HierarchicalSelector({
       clusters: selectedClusters,
       rankedStandards,
     });
-  }, [selectedDomains, selectedClusters, rankedStandards]);
+  }, [selectedDomains, selectedClusters, rankedStandards, onSelectionComplete]);
 
   // Load standard descriptions when standards are selected
   useEffect(() => {

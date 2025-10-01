@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import TaskDisplay from '@/components/TaskDisplay';
 import HierarchicalSelector from '@/components/HierarchicalSelector';
@@ -186,7 +186,7 @@ export default function LabelPage() {
     setStartTime(Date.now());
   }, [currentTaskIndex]);
 
-  const handleSelectionChange = (selection: {
+  const handleSelectionChange = useCallback((selection: {
     domains: string[];
     clusters: string[];
     rankedStandards: RankedStandard[];
@@ -194,7 +194,7 @@ export default function LabelPage() {
     setSelectedDomains(selection.domains);
     setSelectedClusters(selection.clusters);
     setRankedStandards(selection.rankedStandards);
-  };
+  }, []); // No dependencies - setters are stable
 
   const handleSubmit = async () => {
     // Validation
@@ -253,24 +253,11 @@ export default function LabelPage() {
         // Navigate to next task (with updated labeled IDs)
         if (currentTaskIndex < tasks.length - 1) {
           const newIndex = currentTaskIndex + 1;
-          const nextTask = tasks[newIndex];
-
           setCurrentTaskIndex(newIndex);
 
-          // If next task is already labeled, populate selections from existing label
-          if (nextTask && newLabeledIds.has(nextTask.task_id)) {
-            const existingLabel = newLabels.find(l => l.task_id === nextTask.task_id);
-            if (existingLabel) {
-              setSelectedDomains(existingLabel.selected_domains);
-              setSelectedClusters(existingLabel.selected_clusters);
-              setRankedStandards(existingLabel.selected_standards);
-            }
-          } else {
-            // Clear selections for unlabeled tasks
-            setSelectedDomains([]);
-            setSelectedClusters([]);
-            setRankedStandards([]);
-          }
+          // Note: Parent state (selectedDomains, selectedClusters, rankedStandards) will be
+          // automatically updated by HierarchicalSelector's onSelectionComplete callback
+          // when it mounts with the new task's initial values
 
           // Scroll to top
           window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -289,24 +276,10 @@ export default function LabelPage() {
   const handlePrevious = () => {
     if (currentTaskIndex > 0) {
       const newIndex = currentTaskIndex - 1;
-      const previousTask = tasks[newIndex];
-
       setCurrentTaskIndex(newIndex);
 
-      // If task is already labeled, populate selections from existing label
-      if (previousTask && labeledTaskIds.has(previousTask.task_id)) {
-        const existingLabel = labels.find(l => l.task_id === previousTask.task_id);
-        if (existingLabel) {
-          setSelectedDomains(existingLabel.selected_domains);
-          setSelectedClusters(existingLabel.selected_clusters);
-          setRankedStandards(existingLabel.selected_standards);
-        }
-      } else {
-        // Clear selections for unlabeled tasks
-        setSelectedDomains([]);
-        setSelectedClusters([]);
-        setRankedStandards([]);
-      }
+      // Note: Parent state will be automatically updated by HierarchicalSelector's callback
+      // when it mounts with the previous task's initial values
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -316,24 +289,10 @@ export default function LabelPage() {
   const handleNext = () => {
     if (currentTaskIndex < tasks.length - 1) {
       const newIndex = currentTaskIndex + 1;
-      const nextTask = tasks[newIndex];
-
       setCurrentTaskIndex(newIndex);
 
-      // If task is already labeled, populate selections from existing label
-      if (nextTask && labeledTaskIds.has(nextTask.task_id)) {
-        const existingLabel = labels.find(l => l.task_id === nextTask.task_id);
-        if (existingLabel) {
-          setSelectedDomains(existingLabel.selected_domains);
-          setSelectedClusters(existingLabel.selected_clusters);
-          setRankedStandards(existingLabel.selected_standards);
-        }
-      } else {
-        // Clear selections for unlabeled tasks
-        setSelectedDomains([]);
-        setSelectedClusters([]);
-        setRankedStandards([]);
-      }
+      // Note: Parent state will be automatically updated by HierarchicalSelector's callback
+      // when it mounts with the next task's initial values
 
       // Scroll to top
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -346,6 +305,13 @@ export default function LabelPage() {
   const currentTaskLabel = currentTask && isCurrentTaskLabeled
     ? labels.find(label => label.task_id === currentTask.task_id)
     : undefined;
+
+  // BUGFIX: Calculate initial values based on current task label, not parent state
+  // This prevents state bleeding when navigating between tasks
+  // For unlabeled tasks, explicitly pass empty arrays (not undefined)
+  const initialDomainsForTask = currentTaskLabel?.selected_domains || [];
+  const initialClustersForTask = currentTaskLabel?.selected_clusters || [];
+  const initialStandardsForTask = currentTaskLabel?.selected_standards || [];
 
   if (loading) {
     return (
@@ -430,9 +396,9 @@ export default function LabelPage() {
           key={currentTaskIndex}
           onSelectionComplete={handleSelectionChange}
           disabled={submitting}
-          initialDomains={currentTaskLabel?.selected_domains}
-          initialClusters={currentTaskLabel?.selected_clusters}
-          initialStandards={currentTaskLabel?.selected_standards}
+          initialDomains={initialDomainsForTask}
+          initialClusters={initialClustersForTask}
+          initialStandards={initialStandardsForTask}
         />
 
         {/* Action Buttons */}
