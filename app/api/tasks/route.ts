@@ -23,8 +23,8 @@ export async function GET() {
     // Initialize TaskLoader with database path
     loader = new TaskLoader(dbPath);
 
-    // Get all tasks
-    const tasks = loader.getAllTasks();
+    // Get all task metadata (without images to avoid payload size issues)
+    const tasks = loader.getAllTasksMetadata();
 
     // Shuffle with fixed seed (42) - same order for all labelers
     const shuffledTasks = seededShuffle(tasks, 42);

@@ -31,8 +31,45 @@ export class TaskLoader {
   }
 
   /**
+   * Load all tasks WITHOUT images (metadata only)
+   * Use getTask(id) to fetch images for individual tasks on-demand
+   */
+  getAllTasksMetadata(): Array<{
+    task_id: number;
+    name: string;
+    description: string;
+    classname: string;
+    sek1: number;
+    sek2: number;
+  }> {
+    const query = `
+      SELECT
+        task_id,
+        name,
+        description,
+        classname,
+        sek1,
+        sek2
+      FROM tasks
+      WHERE task_image IS NOT NULL
+        AND solution_image IS NOT NULL
+      ORDER BY task_id
+    `;
+
+    return this.db.prepare(query).all() as Array<{
+      task_id: number;
+      name: string;
+      description: string;
+      classname: string;
+      sek1: number;
+      sek2: number;
+    }>;
+  }
+
+  /**
    * Load all tasks with images from database
    * Returns tasks with base64-encoded images for display
+   * WARNING: This loads all images into memory - use getAllTasksMetadata() instead for large datasets
    */
   getAllTasks(): TaskWithImages[] {
     const query = `
