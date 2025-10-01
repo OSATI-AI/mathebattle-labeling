@@ -13,7 +13,7 @@ export async function GET() {
 
   try {
     // Initialize TaskLoader with relative path to database
-    loader = new TaskLoader('../../02_mathebattle/mathebattle_tasks.db');
+    loader = new TaskLoader('data/database/mathebattle_tasks.db');
 
     // Get all tasks
     const tasks = loader.getAllTasks();

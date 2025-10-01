@@ -49,7 +49,7 @@ async function verifyDatabase() {
   let hasErrors = false;
 
   // 1. Verify database file exists
-  const dbPath = '../../02_mathebattle/mathebattle_tasks.db';
+  const dbPath = 'data/database/mathebattle_tasks.db';
   const resolvedDbPath = path.resolve(process.cwd(), dbPath);
 
   logInfo(`Checking database path: ${resolvedDbPath}`);
@@ -140,7 +140,7 @@ async function verifyDatabase() {
   logInfo('\n---\n');
 
   // 6. Verify standards file
-  const standardsPath = '../../01_US_common_core/ATC/standards.jsonl';
+  const standardsPath = 'data/standards/standards.jsonl';
   const resolvedStandardsPath = path.resolve(process.cwd(), standardsPath);
 
   logInfo(`Checking standards path: ${resolvedStandardsPath}`);

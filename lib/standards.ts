@@ -203,7 +203,7 @@ let navigatorInstance: StandardsNavigator | null = null;
  */
 export function loadStandards(): StandardsNavigator {
   if (!navigatorInstance) {
-    const standardsPath = '../../01_US_common_core/ATC/standards_de.jsonl';
+    const standardsPath = 'data/standards/standards_de.jsonl';
     navigatorInstance = new StandardsNavigator(standardsPath);
   }
   return navigatorInstance;

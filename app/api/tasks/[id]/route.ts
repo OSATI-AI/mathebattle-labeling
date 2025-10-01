@@ -28,7 +28,7 @@ export async function GET(
     }
 
     // Initialize TaskLoader
-    loader = new TaskLoader('../../02_mathebattle/mathebattle_tasks.db');
+    loader = new TaskLoader('data/database/mathebattle_tasks.db');
 
     // Get task by ID
     const task = loader.getTask(taskId);
