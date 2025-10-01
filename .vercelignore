@@ -1,0 +1,2 @@
+# Exclude large database file - will be fetched from Blob storage
+data/database/*.db

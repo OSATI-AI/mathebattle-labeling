@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { TaskLoader } from '@/lib/data';
+import { ensureDatabaseExists } from '@/lib/database-init';
 
 /**
  * GET /api/tasks/[id]
@@ -27,8 +28,11 @@ export async function GET(
       );
     }
 
+    // Ensure database exists (downloads from Blob if in Vercel environment)
+    const dbPath = await ensureDatabaseExists();
+
     // Initialize TaskLoader
-    loader = new TaskLoader('data/database/mathebattle_tasks.db');
+    loader = new TaskLoader(dbPath);
 
     // Get task by ID
     const task = loader.getTask(taskId);

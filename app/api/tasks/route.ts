@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { TaskLoader } from '@/lib/data';
 import { seededShuffle } from '@/lib/shuffle';
+import { ensureDatabaseExists } from '@/lib/database-init';
 
 /**
  * GET /api/tasks
@@ -12,8 +13,11 @@ export async function GET() {
   let loader: TaskLoader | null = null;
 
   try {
-    // Initialize TaskLoader with relative path to database
-    loader = new TaskLoader('data/database/mathebattle_tasks.db');
+    // Ensure database exists (downloads from Blob if in Vercel environment)
+    const dbPath = await ensureDatabaseExists();
+
+    // Initialize TaskLoader with database path
+    loader = new TaskLoader(dbPath);
 
     // Get all tasks
     const tasks = loader.getAllTasks();
