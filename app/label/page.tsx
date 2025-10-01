@@ -39,6 +39,9 @@ export default function LabelPage() {
   const [loading, setLoading] = useState(true);
   const [loadingTaskImages, setLoadingTaskImages] = useState(false);
 
+  // Task cache for preloading
+  const [taskCache, setTaskCache] = useState<Map<number, TaskWithImages>>(new Map());
+
   // Time tracking
   const [startTime, setStartTime] = useState<number>(Date.now());
 
@@ -107,32 +110,76 @@ export default function LabelPage() {
     loadTasksAndProgress();
   }, [labelerId]);
 
-  // Load current task images when task index changes
+  // Load current task images when task index changes (with caching and preloading)
   useEffect(() => {
     if (tasks.length === 0 || currentTaskIndex >= tasks.length) {
       setCurrentTask(null);
       return;
     }
 
-    const loadCurrentTaskImages = async () => {
-      setLoadingTaskImages(true);
-      try {
-        const taskId = tasks[currentTaskIndex].task_id;
-        const response = await fetch(`/api/tasks/${taskId}`);
-        const data = await response.json();
+    const loadTaskImages = async (taskId: number) => {
+      const response = await fetch(`/api/tasks/${taskId}`);
+      const data = await response.json();
+      if (data.success && data.task) {
+        return data.task;
+      }
+      return null;
+    };
 
-        if (data.success && data.task) {
-          setCurrentTask(data.task);
-        }
-      } catch (error) {
-        console.error('Error loading task images:', error);
-      } finally {
+    const loadCurrentTaskImages = async () => {
+      const taskId = tasks[currentTaskIndex].task_id;
+
+      // Check cache first
+      if (taskCache.has(taskId)) {
+        setCurrentTask(taskCache.get(taskId)!);
         setLoadingTaskImages(false);
+      } else {
+        setLoadingTaskImages(true);
+        try {
+          const task = await loadTaskImages(taskId);
+          if (task) {
+            setCurrentTask(task);
+            // Cache the task
+            setTaskCache(prev => new Map(prev).set(taskId, task));
+          }
+        } catch (error) {
+          console.error('Error loading task images:', error);
+        } finally {
+          setLoadingTaskImages(false);
+        }
+      }
+
+      // Preload next task in background
+      if (currentTaskIndex < tasks.length - 1) {
+        const nextTaskId = tasks[currentTaskIndex + 1].task_id;
+        if (!taskCache.has(nextTaskId)) {
+          loadTaskImages(nextTaskId).then(task => {
+            if (task) {
+              setTaskCache(prev => new Map(prev).set(nextTaskId, task));
+            }
+          }).catch(err => {
+            console.log('Preload failed for task', nextTaskId, err);
+          });
+        }
+      }
+
+      // Preload previous task in background
+      if (currentTaskIndex > 0) {
+        const prevTaskId = tasks[currentTaskIndex - 1].task_id;
+        if (!taskCache.has(prevTaskId)) {
+          loadTaskImages(prevTaskId).then(task => {
+            if (task) {
+              setTaskCache(prev => new Map(prev).set(prevTaskId, task));
+            }
+          }).catch(err => {
+            console.log('Preload failed for task', prevTaskId, err);
+          });
+        }
       }
     };
 
     loadCurrentTaskImages();
-  }, [currentTaskIndex, tasks]);
+  }, [currentTaskIndex, tasks, taskCache]);
 
   // Reset timer when task changes
   useEffect(() => {
