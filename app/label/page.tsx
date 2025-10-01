@@ -186,26 +186,48 @@ export default function LabelPage() {
         const progressResponse = await fetch(`/api/labels?labeler_id=${labelerId}`);
         const progressData = await progressResponse.json();
 
+        let newLabeledIds = labeledTaskIds;
+        let newLabels = labels;
+
         if (progressData.success) {
           // Update labeled task IDs
           if (progressData.labeled_task_ids) {
-            const newLabeledIds = new Set<number>(progressData.labeled_task_ids);
+            newLabeledIds = new Set<number>(progressData.labeled_task_ids);
             setLabeledTaskIds(newLabeledIds);
           }
 
           // Update labels array
           if (progressData.labels) {
+            newLabels = progressData.labels;
             setLabels(progressData.labels);
           }
         }
 
-        // Reset selections
-        setSelectedDomains([]);
-        setSelectedClusters([]);
-        setRankedStandards([]);
+        // Navigate to next task (with updated labeled IDs)
+        if (currentTaskIndex < tasks.length - 1) {
+          const newIndex = currentTaskIndex + 1;
+          const nextTask = tasks[newIndex];
 
-        // Move to next task
-        handleNext();
+          setCurrentTaskIndex(newIndex);
+
+          // If next task is already labeled, populate selections from existing label
+          if (nextTask && newLabeledIds.has(nextTask.task_id)) {
+            const existingLabel = newLabels.find(l => l.task_id === nextTask.task_id);
+            if (existingLabel) {
+              setSelectedDomains(existingLabel.selected_domains);
+              setSelectedClusters(existingLabel.selected_clusters);
+              setRankedStandards(existingLabel.selected_standards);
+            }
+          } else {
+            // Clear selections for unlabeled tasks
+            setSelectedDomains([]);
+            setSelectedClusters([]);
+            setRankedStandards([]);
+          }
+
+          // Scroll to top
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
       } else {
         alert('Error submitting label: ' + (data.message || data.error));
       }
