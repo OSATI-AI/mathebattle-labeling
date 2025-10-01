@@ -27,7 +27,7 @@ const { chromium } = require('@playwright/test');
     localStorage.setItem('labeler_id', `debug-${Date.now()}`);
   });
 
-  const url = 'https://mathebattle-labeling-kfbpahlrk-wielands-projects-edb6f5fe.vercel.app/label';
+  const url = process.env.DEPLOYMENT_URL || 'https://mathebattle-labeling.vercel.app/label';
   console.log(`\nNavigating to: ${url}\n`);
 
   try {

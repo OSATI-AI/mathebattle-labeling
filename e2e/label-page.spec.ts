@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// Get deployment URL from environment or use latest
-const DEPLOYMENT_URL = process.env.DEPLOYMENT_URL || 'https://mathebattle-labeling-rjkafe55f-wielands-projects-edb6f5fe.vercel.app';
+// Get deployment URL from environment or use production URL
+const DEPLOYMENT_URL = process.env.DEPLOYMENT_URL || 'https://mathebattle-labeling.vercel.app';
 
 test.describe('Label Page E2E Tests', () => {
   test.beforeEach(async ({ page, context }) => {

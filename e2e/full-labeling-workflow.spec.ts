@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-// Get deployment URL from environment or use latest
-const DEPLOYMENT_URL = process.env.DEPLOYMENT_URL || 'https://mathebattle-labeling-3dklmwdop-wielands-projects-edb6f5fe.vercel.app';
+// Get deployment URL from environment or use production URL
+const DEPLOYMENT_URL = process.env.DEPLOYMENT_URL || 'https://mathebattle-labeling.vercel.app';
 
 test.describe('Full Labeling Workflow E2E', () => {
   test.beforeEach(async ({ page, context }) => {
