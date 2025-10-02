@@ -59,7 +59,18 @@ export default function DomainSelector({
               `}
               title={`${domain.description_de || domain.description}\n\n${domain.description}`}
             >
-              <div className="font-bold text-lg">{domain.name}</div>
+              <div className="font-bold text-lg">
+                {domain.id.includes('.') ? (
+                  <>
+                    <span className="text-sm text-gray-600">
+                      {domain.id.split('.')[0] === 'K' ? 'K' : `Grade ${domain.id.split('.')[0]}`}:
+                    </span>{' '}
+                    {domain.name}
+                  </>
+                ) : (
+                  domain.name
+                )}
+              </div>
               <div className="text-xs">
                 <div className="truncate">{domain.description_de || domain.description}</div>
                 <div className="truncate italic text-gray-500 mt-0.5">{domain.description}</div>
