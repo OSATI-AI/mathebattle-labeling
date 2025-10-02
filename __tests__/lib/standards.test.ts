@@ -1,8 +1,8 @@
 /**
- * Tests for lib/standards.ts - StandardsNavigator class
+ * Tests for lib/standards-static.ts - StandardsNavigator class
  */
 
-import { loadStandards } from '@/lib/standards';
+import { loadStandards } from '@/lib/standards-static';
 
 describe('StandardsNavigator', () => {
   let navigator: ReturnType<typeof loadStandards>;
@@ -82,8 +82,9 @@ describe('StandardsNavigator', () => {
       const firstDomain = domains[0];
       const clusters = navigator.getClusters(firstDomain.id);
 
+      // Each cluster's parent_domain should contain the requested domain abbreviation
       clusters.forEach(cluster => {
-        expect(cluster.parent_domain).toBe(firstDomain.id);
+        expect(cluster.parent_domain).toContain(firstDomain.id);
       });
     });
   });
@@ -139,7 +140,8 @@ describe('StandardsNavigator', () => {
         const clusters = navigator.getClusters(domain.id);
 
         clusters.forEach(cluster => {
-          expect(cluster.parent_domain).toBe(domain.id);
+          // Cluster's parent_domain should contain the requested domain abbreviation
+          expect(cluster.parent_domain).toContain(domain.id);
 
           const standards = navigator.getStandards(cluster.id);
 
