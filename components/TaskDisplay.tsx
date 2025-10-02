@@ -8,17 +8,17 @@ interface TaskDisplayProps {
 /**
  * TaskDisplay component
  *
- * Displays task and solution images side-by-side
+ * Displays task and solution images stacked vertically
  * Shows task metadata (name, description, classname)
  */
 export default function TaskDisplay({ task, loading = false }: TaskDisplayProps) {
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+      <div className="animate-pulse space-y-4">
         <div className="h-8 bg-gray-200 rounded w-3/4 mb-4"></div>
         <div className="h-4 bg-gray-200 rounded w-full mb-2"></div>
         <div className="h-4 bg-gray-200 rounded w-2/3 mb-6"></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-6">
           <div className="h-64 bg-gray-200 rounded"></div>
           <div className="h-64 bg-gray-200 rounded"></div>
         </div>
@@ -28,16 +28,16 @@ export default function TaskDisplay({ task, loading = false }: TaskDisplayProps)
 
   if (!task) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <p className="text-gray-500 text-center">No task selected</p>
+      <div className="text-center py-8">
+        <p className="text-gray-500">No task selected</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="space-y-4">
       {/* Task Header */}
-      <div className="mb-4">
+      <div>
         <h2 className="text-2xl font-bold text-gray-800 mb-2">
           Task #{task.task_id}: {task.name}
         </h2>
@@ -59,11 +59,11 @@ export default function TaskDisplay({ task, loading = false }: TaskDisplayProps)
         </div>
       </div>
 
-      {/* Images */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Images - Stacked Vertically */}
+      <div className="space-y-6">
         {/* Task Image */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Task Image</h3>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-gray-700">Task Image</h3>
           {task.task_image_base64 ? (
             <img
               src={task.task_image_base64}
@@ -78,8 +78,8 @@ export default function TaskDisplay({ task, loading = false }: TaskDisplayProps)
         </div>
 
         {/* Solution Image */}
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-2">Solution Image</h3>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-gray-700">Solution Image</h3>
           {task.solution_image_base64 ? (
             <img
               src={task.solution_image_base64}

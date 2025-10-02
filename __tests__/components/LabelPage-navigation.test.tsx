@@ -68,7 +68,7 @@ describe('Label Page Navigation', () => {
     (global.fetch as jest.Mock).mockClear();
   });
 
-  it('should scroll to top when Next button is clicked', async () => {
+  it('should navigate to next task when Next button is clicked', async () => {
     const LabelPage = require('@/app/label/page').default;
     render(<LabelPage />);
 
@@ -77,15 +77,17 @@ describe('Label Page Navigation', () => {
       expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Find and click Next button (use first one - top button)
-    const nextButtons = screen.getAllByRole('button', { name: /Next/i });
-    fireEvent.click(nextButtons[0]);
+    // Find and click Next button
+    const nextButton = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextButton);
 
-    // Should scroll to top
-    expect(mockScrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    // Should navigate to task 2
+    await waitFor(() => {
+      expect(screen.getByText(/Task 2 of/)).toBeInTheDocument();
+    });
   });
 
-  it('should scroll to top when Previous button is clicked', async () => {
+  it('should navigate to previous task when Previous button is clicked', async () => {
     const LabelPage = require('@/app/label/page').default;
     render(<LabelPage />);
 
@@ -95,20 +97,24 @@ describe('Label Page Navigation', () => {
     }, { timeout: 3000 });
 
     // Navigate to task 2 first
-    const nextButtons = screen.getAllByRole('button', { name: /Next/i });
-    fireEvent.click(nextButtons[0]);
+    const nextButton = screen.getByRole('button', { name: /Next/i });
+    fireEvent.click(nextButton);
 
-    mockScrollTo.mockClear();
+    await waitFor(() => {
+      expect(screen.getByText(/Task 2 of/)).toBeInTheDocument();
+    });
 
     // Click Previous button
-    const prevButtons = screen.getAllByRole('button', { name: /Previous/i });
-    fireEvent.click(prevButtons[0]);
+    const prevButton = screen.getByRole('button', { name: /Previous/i });
+    fireEvent.click(prevButton);
 
-    // Should scroll to top
-    expect(mockScrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    // Should navigate back to task 1
+    await waitFor(() => {
+      expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
+    });
   });
 
-  it('should have navigation buttons at the top of the page', async () => {
+  it('should have a single set of navigation buttons', async () => {
     const LabelPage = require('@/app/label/page').default;
     render(<LabelPage />);
 
@@ -117,11 +123,11 @@ describe('Label Page Navigation', () => {
       expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Should have 2 sets of Previous and Next buttons (top and bottom)
+    // Should have only 1 set of Previous and Next buttons (in split screen layout)
     const prevButtons = screen.getAllByRole('button', { name: /Previous/i });
     const nextButtons = screen.getAllByRole('button', { name: /Next/i });
 
-    expect(prevButtons).toHaveLength(2);
-    expect(nextButtons).toHaveLength(2);
+    expect(prevButtons).toHaveLength(1);
+    expect(nextButtons).toHaveLength(1);
   });
 });

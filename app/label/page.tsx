@@ -194,7 +194,6 @@ export default function LabelPage() {
         // Navigate to next task
         if (currentTaskIndex < tasks.length - 1) {
           setCurrentTaskIndex(currentTaskIndex + 1);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
         alert('Error submitting label: ' + (data.message || data.error));
@@ -210,14 +209,12 @@ export default function LabelPage() {
   const handlePrevious = () => {
     if (currentTaskIndex > 0) {
       setCurrentTaskIndex(currentTaskIndex - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleNext = () => {
     if (currentTaskIndex < tasks.length - 1) {
       setCurrentTaskIndex(currentTaskIndex + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -248,7 +245,7 @@ export default function LabelPage() {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
+      <div className="max-w-[1920px] mx-auto space-y-4">
         {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-800">
@@ -259,94 +256,79 @@ export default function LabelPage() {
           </div>
         </div>
 
-        {/* Progress Bar */}
-        <ProgressBar
-          current={currentTaskIndex + 1}
-          total={tasks.length}
-          labeledCount={labeledCount}
-        />
-
-        {/* Top Navigation */}
-        <div className="flex gap-4 items-center justify-between bg-white rounded-lg shadow-md p-4">
-          <button
-            onClick={handlePrevious}
-            disabled={currentTaskIndex === 0}
-            className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            ← Previous
-          </button>
-
-          <div className="text-sm text-gray-600 font-medium">
-            Navigation
+        {/* Split Screen Container */}
+        <div className="flex gap-4 h-[calc(100vh-140px)]">
+          {/* LEFT HALF: Task Images with own scrollbar */}
+          <div className="w-1/2 bg-white rounded-lg shadow-md p-6 overflow-y-auto">
+            <TaskDisplay task={currentTask} loading={loadingTask} />
           </div>
 
-          <button
-            onClick={handleNext}
-            disabled={currentTaskIndex === tasks.length - 1}
-            className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Next →
-          </button>
-        </div>
+          {/* RIGHT HALF: All UI controls with own scrollbar */}
+          <div className="w-1/2 space-y-4 overflow-y-auto pr-2">
+            {/* Progress Bar */}
+            <ProgressBar
+              current={currentTaskIndex + 1}
+              total={tasks.length}
+              labeledCount={labeledCount}
+            />
 
-        {/* Task Display */}
-        <TaskDisplay task={currentTask} loading={loadingTask} />
+            {/* Already Labeled Indicator */}
+            {currentLabel && (
+              <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
+                ✓ This task has already been labeled by you.
+              </div>
+            )}
 
-        {/* Already Labeled Indicator */}
-        {currentLabel && (
-          <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
-            ✓ This task has already been labeled by you.
+            {/* Hierarchical Selector */}
+            <HierarchicalSelector
+              key={currentTaskIndex}
+              onSelectionComplete={handleSelectionChange}
+              disabled={submitting || loadingTask}
+              initialDomains={currentLabel?.selected_domains || []}
+              initialClusters={currentLabel?.selected_clusters || []}
+              initialStandards={currentLabel?.selected_standards || []}
+            />
+
+            {/* Combined Navigation + Submit */}
+            <div className="flex gap-4 items-center justify-between bg-white rounded-lg shadow-md p-4">
+              <button
+                onClick={handlePrevious}
+                disabled={currentTaskIndex === 0}
+                className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                ← Previous
+              </button>
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting || rankedStandards.length === 0}
+                className="px-8 py-3 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-md"
+              >
+                {submitting ? 'Submitting...' : 'Submit Label'}
+              </button>
+
+              <button
+                onClick={handleNext}
+                disabled={currentTaskIndex === tasks.length - 1}
+                className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-gray-700">
+              <h3 className="font-semibold mb-2">Instructions:</h3>
+              <ol className="list-decimal list-inside space-y-1">
+                <li>Review the task and solution images on the left</li>
+                <li>Select applicable domain(s) from Common Core standards</li>
+                <li>Choose specific cluster(s) within those domains</li>
+                <li>Select the relevant standard(s)</li>
+                <li>Rank the standards by relevance (1 = most relevant)</li>
+                <li>Click "Submit Label" to save and move to the next task</li>
+              </ol>
+            </div>
           </div>
-        )}
-
-        {/* Hierarchical Selector */}
-        <HierarchicalSelector
-          key={currentTaskIndex}
-          onSelectionComplete={handleSelectionChange}
-          disabled={submitting || loadingTask}
-          initialDomains={currentLabel?.selected_domains || []}
-          initialClusters={currentLabel?.selected_clusters || []}
-          initialStandards={currentLabel?.selected_standards || []}
-        />
-
-        {/* Action Buttons */}
-        <div className="flex gap-4 items-center justify-between bg-white rounded-lg shadow-md p-4">
-          <button
-            onClick={handlePrevious}
-            disabled={currentTaskIndex === 0}
-            className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            ← Previous
-          </button>
-
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || rankedStandards.length === 0}
-            className="px-8 py-3 bg-blue-600 text-white rounded-md font-bold hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors shadow-md"
-          >
-            {submitting ? 'Submitting...' : 'Submit Label'}
-          </button>
-
-          <button
-            onClick={handleNext}
-            disabled={currentTaskIndex === tasks.length - 1}
-            className="px-6 py-2 bg-gray-500 text-white rounded-md font-medium hover:bg-gray-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-          >
-            Next →
-          </button>
-        </div>
-
-        {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm text-gray-700">
-          <h3 className="font-semibold mb-2">Instructions:</h3>
-          <ol className="list-decimal list-inside space-y-1">
-            <li>Review the task and solution images above</li>
-            <li>Select applicable domain(s) from Common Core standards</li>
-            <li>Choose specific cluster(s) within those domains</li>
-            <li>Select the relevant standard(s)</li>
-            <li>Rank the standards by relevance (1 = most relevant)</li>
-            <li>Click "Submit Label" to save and move to the next task</li>
-          </ol>
         </div>
       </div>
     </div>
