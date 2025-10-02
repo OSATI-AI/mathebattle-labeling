@@ -55,17 +55,17 @@ export class StandardsNavigator {
   }
 
   /**
-   * Get all domains with their descriptions
+   * Get all unique domains with their descriptions
    * Returns array of { id, name, description, description_de }
-   * Returns each domain individually (e.g., K.NBT, 1.NBT, 2.NBT are separate)
-   * id contains the full domain ID, name is the abbreviation for display
+   * Returns each domain abbreviation only once (e.g., one "NBT" for all grades)
+   * id and name are the same abbreviation
    */
   getDomains(): DomainInfo[] {
-    const domains: DomainInfo[] = [];
+    const domainsMap = new Map<string, DomainInfo>();
 
     for (const [id, standard] of this.standards.entries()) {
       if (standard.level === 'Domain' || standard.level === 'domain') {
-        // Extract domain abbreviation for display name
+        // Extract domain abbreviation
         // Elementary/Middle: "K.NBT" → "NBT", "1.NBT" → "NBT"
         // High School: "A-APR" → "APR", "F-BF" → "BF"
         let abbreviation: string;
@@ -79,17 +79,20 @@ export class StandardsNavigator {
           abbreviation = id;
         }
 
-        domains.push({
-          id: id,  // Use full domain ID (e.g., "K.NBT", "1.NBT")
-          name: abbreviation,  // Display name (e.g., "NBT")
-          description: standard.description,
-          description_de: standard.description_de,
-        });
+        // Only add if we haven't seen this abbreviation yet
+        if (!domainsMap.has(abbreviation)) {
+          domainsMap.set(abbreviation, {
+            id: abbreviation,  // Use abbreviation as ID
+            name: abbreviation,  // Display name is also abbreviation
+            description: standard.description,
+            description_de: standard.description_de,
+          });
+        }
       }
     }
 
-    // Sort by ID (this will group by grade level, then domain)
-    return domains.sort((a, b) => a.id.localeCompare(b.id));
+    // Convert to array and sort by abbreviation
+    return Array.from(domainsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
   }
 
   /**
@@ -117,7 +120,7 @@ export class StandardsNavigator {
         }
       }
     } else {
-      // Find all domain IDs that match this abbreviation
+      // Find all full domain IDs that match this abbreviation
       const matchingDomainIds: string[] = [];
       for (const [id, standard] of this.standards.entries()) {
         if (standard.level === 'Domain' || standard.level === 'domain') {
