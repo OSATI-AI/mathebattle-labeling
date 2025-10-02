@@ -1,15 +1,13 @@
 import { test, expect } from '@playwright/test';
 
-// Test against deployed production app
-const PROD_URL = 'https://mathebattle-labeling-wielands-projects-edb6f5fe.vercel.app';
-
 test.describe('Deployed App - Labeled Task Selection Restoration', () => {
   test('should show previous selections when navigating back to labeled task', async ({ page }) => {
     // Use labeler_3 for testing (one of the valid IDs)
     const labelerId = 'labeler_3';
 
     // Navigate directly using the URL parameter (this will auto-login)
-    await page.goto(`${PROD_URL}/?labeler=${labelerId}`);
+    // Uses baseURL from playwright.config.ts
+    await page.goto(`/?labeler=${labelerId}`);
 
     // Wait for navigation to label page (auto-redirect happens)
     await page.waitForURL('**/label', { timeout: 10000 });
