@@ -77,9 +77,9 @@ describe('Label Page Navigation', () => {
       expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Find and click Next button
-    const nextButton = screen.getByRole('button', { name: /Next/i });
-    fireEvent.click(nextButton);
+    // Find and click Next button (use first one since we have two sets)
+    const nextButtons = screen.getAllByRole('button', { name: /Next/i });
+    fireEvent.click(nextButtons[0]);
 
     // Should navigate to task 2
     await waitFor(() => {
@@ -96,17 +96,17 @@ describe('Label Page Navigation', () => {
       expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Navigate to task 2 first
-    const nextButton = screen.getByRole('button', { name: /Next/i });
-    fireEvent.click(nextButton);
+    // Navigate to task 2 first (use first button since we have two sets)
+    const nextButtons = screen.getAllByRole('button', { name: /Next/i });
+    fireEvent.click(nextButtons[0]);
 
     await waitFor(() => {
       expect(screen.getByText(/Task 2 of/)).toBeInTheDocument();
     });
 
-    // Click Previous button
-    const prevButton = screen.getByRole('button', { name: /Previous/i });
-    fireEvent.click(prevButton);
+    // Click Previous button (use first button since we have two sets)
+    const prevButtons = screen.getAllByRole('button', { name: /Previous/i });
+    fireEvent.click(prevButtons[0]);
 
     // Should navigate back to task 1
     await waitFor(() => {
@@ -114,7 +114,7 @@ describe('Label Page Navigation', () => {
     });
   });
 
-  it('should have a single set of navigation buttons', async () => {
+  it('should have two sets of navigation buttons', async () => {
     const LabelPage = require('@/app/label/page').default;
     render(<LabelPage />);
 
@@ -123,11 +123,11 @@ describe('Label Page Navigation', () => {
       expect(screen.getByText(/Task 1 of/)).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Should have only 1 set of Previous and Next buttons (in split screen layout)
+    // Should have 2 sets of Previous and Next buttons (top and bottom navigation)
     const prevButtons = screen.getAllByRole('button', { name: /Previous/i });
     const nextButtons = screen.getAllByRole('button', { name: /Next/i });
 
-    expect(prevButtons).toHaveLength(1);
-    expect(nextButtons).toHaveLength(1);
+    expect(prevButtons).toHaveLength(2);
+    expect(nextButtons).toHaveLength(2);
   });
 });
