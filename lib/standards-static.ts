@@ -124,7 +124,7 @@ export class StandardsNavigator {
           });
         }
       }
-    } else {
+    } else if (mainStandard) {
       // Use main standard
       standards.push({
         id: mainStandard.id,

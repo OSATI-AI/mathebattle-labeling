@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // Test against deployed production app
-const PROD_URL = 'https://mathebattle-labeling-7w8125i4b-wielands-projects-edb6f5fe.vercel.app';
+const PROD_URL = 'https://mathebattle-labeling-wielands-projects-edb6f5fe.vercel.app';
 
 test.describe('Deployed App - Labeled Task Selection Restoration', () => {
   test('should show previous selections when navigating back to labeled task', async ({ page }) => {
