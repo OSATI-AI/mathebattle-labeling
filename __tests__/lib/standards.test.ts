@@ -18,9 +18,11 @@ describe('StandardsNavigator', () => {
       expect(domains.length).toBeGreaterThan(0);
     });
 
-    it('should return exactly 11 domains', () => {
+    it('should return all grade-specific domains (not deduplicated)', () => {
       const domains = navigator.getDomains();
-      expect(domains.length).toBe(11);
+      // After fixing the deduplication bug, we should have 60+ domains
+      // (one for each grade-domain combination, not just one per abbreviation)
+      expect(domains.length).toBeGreaterThan(30);
     });
 
     it('should return domains with required fields', () => {

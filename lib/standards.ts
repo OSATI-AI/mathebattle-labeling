@@ -52,15 +52,15 @@ export class StandardsNavigator {
   /**
    * Get all domains with their descriptions
    * Returns array of { id, name, description, description_de }
-   * Groups domains by subject area (e.g., all NBT domains return as one "NBT" entry)
-   * id contains the abbreviation, name is the abbreviation for display
+   * Returns each domain individually (e.g., K.NBT, 1.NBT, 2.NBT are separate)
+   * id contains the full domain ID, name is the abbreviation for display
    */
   getDomains(): DomainInfo[] {
-    const domainMap = new Map<string, { ids: string[], description: string, description_de?: string }>();
+    const domains: DomainInfo[] = [];
 
     for (const [id, standard] of this.standards.entries()) {
       if (standard.level === 'Domain' || standard.level === 'domain') {
-        // Extract domain abbreviation
+        // Extract domain abbreviation for display name
         // Elementary/Middle: "K.NBT" → "NBT", "1.NBT" → "NBT"
         // High School: "A-APR" → "APR", "F-BF" → "BF"
         let abbreviation: string;
@@ -74,73 +74,76 @@ export class StandardsNavigator {
           abbreviation = id;
         }
 
-        if (!domainMap.has(abbreviation)) {
-          domainMap.set(abbreviation, {
-            ids: [id],
-            description: standard.description,
-            description_de: standard.description_de,
-          });
-        } else {
-          // Add this domain ID to the group
-          domainMap.get(abbreviation)!.ids.push(id);
-        }
+        domains.push({
+          id: id,  // Use full domain ID (e.g., "K.NBT", "1.NBT")
+          name: abbreviation,  // Display name (e.g., "NBT")
+          description: standard.description,
+          description_de: standard.description_de,
+        });
       }
     }
 
-    // Convert map to array
-    const domains: DomainInfo[] = [];
-    for (const [abbreviation, data] of domainMap.entries()) {
-      domains.push({
-        id: abbreviation,  // Use abbreviation as ID (e.g., "NBT", "APR")
-        name: abbreviation,  // Display name
-        description: data.description,
-        description_de: data.description_de,
-      });
-    }
-
-    // Sort alphabetically
-    return domains.sort((a, b) => a.name.localeCompare(b.name));
+    // Sort by ID (this will group by grade level, then domain)
+    return domains.sort((a, b) => a.id.localeCompare(b.id));
   }
 
   /**
-   * Get all clusters for a given domain abbreviation
-   * Args: domainAbbreviation - Domain abbreviation (e.g., "NBT", "APR")
-   * Returns clusters from ALL grade levels for that domain
+   * Get all clusters for a given domain ID or abbreviation
+   * Args: domainIdOrAbbr - Full domain ID (e.g., "K.NBT") or abbreviation (e.g., "NBT")
+   * Returns clusters for the specific domain if full ID, or all matching domains if abbreviation
    */
-  getClusters(domainAbbreviation: string): ClusterInfo[] {
+  getClusters(domainIdOrAbbr: string): ClusterInfo[] {
     const clusters: ClusterInfo[] = [];
 
-    // Find all domain IDs that match this abbreviation
-    const matchingDomainIds: string[] = [];
-    for (const [id, standard] of this.standards.entries()) {
-      if (standard.level === 'Domain' || standard.level === 'domain') {
-        let abbreviation: string;
-        if (id.includes('.')) {
-          const parts = id.split('.');
-          abbreviation = parts.length >= 2 ? parts[1] : id;
-        } else if (id.includes('-')) {
-          const parts = id.split('-');
-          abbreviation = parts.length >= 2 ? parts[1] : id;
-        } else {
-          abbreviation = id;
-        }
+    // Check if this is a full domain ID or just an abbreviation
+    const isFullId = domainIdOrAbbr.includes('.') || domainIdOrAbbr.includes('-');
 
-        if (abbreviation === domainAbbreviation) {
-          matchingDomainIds.push(id);
+    if (isFullId) {
+      // Use the exact domain ID
+      for (const [id, standard] of this.standards.entries()) {
+        if ((standard.level === 'Cluster' || standard.level === 'cluster') &&
+            standard.parent === domainIdOrAbbr) {
+          clusters.push({
+            id,
+            description: standard.description,
+            description_de: standard.description_de,
+            parent_domain: standard.parent,
+          });
         }
       }
-    }
+    } else {
+      // Find all domain IDs that match this abbreviation
+      const matchingDomainIds: string[] = [];
+      for (const [id, standard] of this.standards.entries()) {
+        if (standard.level === 'Domain' || standard.level === 'domain') {
+          let abbreviation: string;
+          if (id.includes('.')) {
+            const parts = id.split('.');
+            abbreviation = parts.length >= 2 ? parts[1] : id;
+          } else if (id.includes('-')) {
+            const parts = id.split('-');
+            abbreviation = parts.length >= 2 ? parts[1] : id;
+          } else {
+            abbreviation = id;
+          }
 
-    // Get all clusters for these domains
-    for (const [id, standard] of this.standards.entries()) {
-      if ((standard.level === 'Cluster' || standard.level === 'cluster') &&
-          standard.parent && matchingDomainIds.includes(standard.parent)) {
-        clusters.push({
-          id,
-          description: standard.description,
-          description_de: standard.description_de,
-          parent_domain: standard.parent,
-        });
+          if (abbreviation === domainIdOrAbbr) {
+            matchingDomainIds.push(id);
+          }
+        }
+      }
+
+      // Get all clusters for these domains
+      for (const [id, standard] of this.standards.entries()) {
+        if ((standard.level === 'Cluster' || standard.level === 'cluster') &&
+            standard.parent && matchingDomainIds.includes(standard.parent)) {
+          clusters.push({
+            id,
+            description: standard.description,
+            description_de: standard.description_de,
+            parent_domain: standard.parent,
+          });
+        }
       }
     }
 

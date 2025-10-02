@@ -64,8 +64,9 @@ describe('DomainSelector', () => {
       />
     );
 
-    expect(screen.getByText('Counting and Cardinality')).toBeInTheDocument();
-    expect(screen.getByText('Operations and Algebraic Thinking')).toBeInTheDocument();
+    // The component displays description twice (once for German/fallback, once for English)
+    expect(screen.getAllByText('Counting and Cardinality').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Operations and Algebraic Thinking').length).toBeGreaterThan(0);
   });
 
   it('should highlight selected domains', () => {

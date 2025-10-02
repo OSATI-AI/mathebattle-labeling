@@ -49,12 +49,9 @@ export default function StandardSelector({
 
         setStandards(allStandards);
 
-        // Remove any selected standards that are no longer valid
-        const validStandardIds = new Set(allStandards.map(s => s.id));
-        const newSelectedStandards = selectedStandards.filter(id => validStandardIds.has(id));
-        if (newSelectedStandards.length !== selectedStandards.length) {
-          onStandardsChange(newSelectedStandards);
-        }
+        // Note: We don't validate selectedStandards here because:
+        // 1. On initial load, selectedStandards from props are valid
+        // 2. When clusters change, the parent component handles clearing standards
       } catch (error) {
         console.error('Error loading standards:', error);
         setStandards([]);

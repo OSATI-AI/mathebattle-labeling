@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+
 interface RankedStandard {
   standard_id: string;
   rank: number;
@@ -26,40 +28,44 @@ export default function RankingInterface({
   disabled = false
 }: RankingInterfaceProps) {
   // Initialize ranking when standards change
-  if (selectedStandards.length > 0 && rankedStandards.length === 0) {
-    const initialRanking = selectedStandards.map((id, index) => ({
-      standard_id: id,
-      rank: index + 1
-    }));
-    onRankingChange(initialRanking);
-  }
+  useEffect(() => {
+    if (selectedStandards.length > 0 && rankedStandards.length === 0) {
+      const initialRanking = selectedStandards.map((id, index) => ({
+        standard_id: id,
+        rank: index + 1
+      }));
+      onRankingChange(initialRanking);
+    }
+  }, [selectedStandards, rankedStandards, onRankingChange]);
 
   // Keep ranking in sync with selected standards
-  if (selectedStandards.length !== rankedStandards.length) {
-    // Add new standards or remove deselected ones
-    const existingStandards = new Set(rankedStandards.map(r => r.standard_id));
-    const selectedSet = new Set(selectedStandards);
+  useEffect(() => {
+    if (selectedStandards.length !== rankedStandards.length) {
+      // Add new standards or remove deselected ones
+      const existingStandards = new Set(rankedStandards.map(r => r.standard_id));
+      const selectedSet = new Set(selectedStandards);
 
-    // Remove deselected standards
-    let updatedRanking = rankedStandards.filter(r => selectedSet.has(r.standard_id));
+      // Remove deselected standards
+      let updatedRanking = rankedStandards.filter(r => selectedSet.has(r.standard_id));
 
-    // Add new standards
-    const newStandards = selectedStandards.filter(id => !existingStandards.has(id));
-    const nextRank = updatedRanking.length + 1;
-    newStandards.forEach((id, index) => {
-      updatedRanking.push({
-        standard_id: id,
-        rank: nextRank + index
+      // Add new standards
+      const newStandards = selectedStandards.filter(id => !existingStandards.has(id));
+      const nextRank = updatedRanking.length + 1;
+      newStandards.forEach((id, index) => {
+        updatedRanking.push({
+          standard_id: id,
+          rank: nextRank + index
+        });
       });
-    });
 
-    // Re-rank to ensure continuous sequence
-    updatedRanking = updatedRanking
-      .sort((a, b) => a.rank - b.rank)
-      .map((item, index) => ({ ...item, rank: index + 1 }));
+      // Re-rank to ensure continuous sequence
+      updatedRanking = updatedRanking
+        .sort((a, b) => a.rank - b.rank)
+        .map((item, index) => ({ ...item, rank: index + 1 }));
 
-    onRankingChange(updatedRanking);
-  }
+      onRankingChange(updatedRanking);
+    }
+  }, [selectedStandards, rankedStandards, onRankingChange]);
 
   const moveUp = (index: number) => {
     if (index === 0 || disabled) return;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import DomainSelector from './DomainSelector';
 import ClusterSelector from './ClusterSelector';
 import StandardSelector from './StandardSelector';
@@ -56,6 +56,48 @@ export default function HierarchicalSelector({
 
   // Standard descriptions for ranking interface
   const [standardDescriptions, setStandardDescriptions] = useState<Map<string, string>>(new Map());
+
+  // Track previous prop values to detect genuine prop changes
+  const prevPropsRef = useRef({
+    domains: initialDomains,
+    clusters: initialClusters,
+    standards: initialStandards
+  });
+
+  // Sync state when initial props change (important for navigating between tasks)
+  // Only update if the PROPS themselves changed, not if user made manual selections
+  useEffect(() => {
+    const newDomains = initialDomains || [];
+    const newClusters = initialClusters || [];
+    const newStandardIds = (initialStandards || []).map(s => s.standard_id);
+    const newRankedStandards = initialStandards || [];
+
+    // Check if props actually changed from their previous values
+    const domainsChanged = JSON.stringify(prevPropsRef.current.domains) !== JSON.stringify(newDomains);
+    const clustersChanged = JSON.stringify(prevPropsRef.current.clusters) !== JSON.stringify(newClusters);
+    const standardsChanged = JSON.stringify(prevPropsRef.current.standards) !== JSON.stringify(newRankedStandards);
+
+    // Only sync state if props genuinely changed (e.g., navigated to different task)
+    if (domainsChanged) {
+      setSelectedDomains(newDomains);
+    }
+
+    if (clustersChanged) {
+      setSelectedClusters(newClusters);
+    }
+
+    if (standardsChanged) {
+      setSelectedStandards(newStandardIds);
+      setRankedStandards(newRankedStandards);
+    }
+
+    // Update ref for next comparison
+    prevPropsRef.current = {
+      domains: newDomains,
+      clusters: newClusters,
+      standards: newRankedStandards
+    };
+  }, [initialDomains, initialClusters, initialStandards]); // Don't include state in dependencies to avoid loops
 
   // Load domains on mount
   useEffect(() => {

@@ -2,7 +2,7 @@
  * Tests for label submission and state clearing
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -31,18 +31,37 @@ Object.defineProperty(window, 'localStorage', {
   value: mockLocalStorage,
 });
 
+// Mock window.alert
+window.alert = jest.fn();
+
 // Mock fetch
 let labelSubmissionCount = 0;
+const mockTasks = [
+  { task_id: 1, name: 'Task 1', description: 'Desc 1', classname: '1', task_image_base64: 'data:image/png;base64,img1', solution_image_base64: 'data:image/png;base64,sol1' },
+  { task_id: 2, name: 'Task 2', description: 'Desc 2', classname: '2', task_image_base64: 'data:image/png;base64,img2', solution_image_base64: 'data:image/png;base64,sol2' },
+  { task_id: 3, name: 'Task 3', description: 'Desc 3', classname: '3', task_image_base64: 'data:image/png;base64,img3', solution_image_base64: 'data:image/png;base64,sol3' },
+];
+
 global.fetch = jest.fn((url: string, options?: any) => {
+  // Match /api/tasks/:id (task details endpoint)
+  const taskIdMatch = url.match(/\/api\/tasks\/(\d+)/);
+  if (taskIdMatch) {
+    const taskId = parseInt(taskIdMatch[1]);
+    const task = mockTasks.find(t => t.task_id === taskId);
+    return Promise.resolve({
+      json: () => Promise.resolve({
+        success: true,
+        task: task,
+      }),
+    });
+  }
+
+  // Match /api/tasks (task list endpoint)
   if (url.includes('/api/tasks')) {
     return Promise.resolve({
       json: () => Promise.resolve({
         success: true,
-        tasks: [
-          { task_id: 1, name: 'Task 1', description: 'Desc 1', classname: '1', task_image_base64: 'data:image/png;base64,img1', solution_image_base64: 'data:image/png;base64,sol1' },
-          { task_id: 2, name: 'Task 2', description: 'Desc 2', classname: '2', task_image_base64: 'data:image/png;base64,img2', solution_image_base64: 'data:image/png;base64,sol2' },
-          { task_id: 3, name: 'Task 3', description: 'Desc 3', classname: '3', task_image_base64: 'data:image/png;base64,img3', solution_image_base64: 'data:image/png;base64,sol3' },
-        ],
+        tasks: mockTasks,
       }),
     });
   }
@@ -128,25 +147,33 @@ describe('Label Page Submission and State Clearing', () => {
 
     // Step 1: Select a domain
     const ccButton = screen.getByText('CC').closest('button');
-    fireEvent.click(ccButton!);
+    await act(async () => {
+      fireEvent.click(ccButton!);
+    });
 
     // Wait for clusters to load
     await waitFor(() => {
-      expect(screen.getByText('Cluster A')).toBeInTheDocument();
+      const clusters = screen.queryAllByText('Cluster A');
+      expect(clusters.length).toBeGreaterThan(0);
     }, { timeout: 3000 });
 
     // Step 2: Select a cluster
-    const clusterButton = screen.getByText('Cluster A').closest('button');
-    fireEvent.click(clusterButton!);
+    const clusterButton = screen.getAllByText('Cluster A')[0].closest('button');
+    await act(async () => {
+      fireEvent.click(clusterButton!);
+    });
 
     // Wait for standards to load
     await waitFor(() => {
-      expect(screen.getByText('Standard 1')).toBeInTheDocument();
+      const standards = screen.queryAllByText('Standard 1');
+      expect(standards.length).toBeGreaterThan(0);
     }, { timeout: 3000 });
 
     // Step 3: Select a standard
-    const standardButton = screen.getByText('Standard 1').closest('button');
-    fireEvent.click(standardButton!);
+    const standardButton = screen.getAllByText('Standard 1')[0].closest('button');
+    await act(async () => {
+      fireEvent.click(standardButton!);
+    });
 
     // Wait for ranking interface to appear
     await waitFor(() => {
@@ -161,7 +188,9 @@ describe('Label Page Submission and State Clearing', () => {
     // Step 4: Submit the label
     const submitButton = screen.getByRole('button', { name: /Submit Label/i });
     expect(submitButton).toBeEnabled();
-    fireEvent.click(submitButton);
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for submission to complete and navigation to next task
     await waitFor(() => {
@@ -208,19 +237,27 @@ describe('Label Page Submission and State Clearing', () => {
       expect(screen.getByText('CC')).toBeInTheDocument();
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByText('CC').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getByText('CC').closest('button')!);
+    });
 
     await waitFor(() => {
-      expect(screen.getByText('Cluster A')).toBeInTheDocument();
+      const clusters = screen.queryAllByText('Cluster A');
+      expect(clusters.length).toBeGreaterThan(0);
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByText('Cluster A').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Cluster A')[0].closest('button')!);
+    });
 
     await waitFor(() => {
-      expect(screen.getByText('Standard 1')).toBeInTheDocument();
+      const standards = screen.queryAllByText('Standard 1');
+      expect(standards.length).toBeGreaterThan(0);
     }, { timeout: 3000 });
 
-    fireEvent.click(screen.getByText('Standard 1').closest('button')!);
+    await act(async () => {
+      fireEvent.click(screen.getAllByText('Standard 1')[0].closest('button')!);
+    });
 
     // Verify PRIMARY badge exists
     await waitFor(() => {
@@ -229,7 +266,9 @@ describe('Label Page Submission and State Clearing', () => {
 
     // Submit
     const submitButton = screen.getByRole('button', { name: /Submit Label/i });
-    fireEvent.click(submitButton);
+    await act(async () => {
+      fireEvent.click(submitButton);
+    });
 
     // Wait for next task
     await waitFor(() => {

@@ -20,6 +20,7 @@ async function uploadImagesBatch(files: string[], imagesDir: string, token: stri
     return put(`images/${file}`, fileBuffer, {
       access: 'public',
       token: token,
+      addRandomSuffix: false,
     });
   });
 

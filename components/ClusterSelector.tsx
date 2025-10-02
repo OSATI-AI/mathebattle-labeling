@@ -49,12 +49,9 @@ export default function ClusterSelector({
 
         setClusters(allClusters);
 
-        // Remove any selected clusters that are no longer valid
-        const validClusterIds = new Set(allClusters.map(c => c.id));
-        const newSelectedClusters = selectedClusters.filter(id => validClusterIds.has(id));
-        if (newSelectedClusters.length !== selectedClusters.length) {
-          onClustersChange(newSelectedClusters);
-        }
+        // Note: We don't validate selectedClusters here because:
+        // 1. On initial load, selectedClusters from props are valid
+        // 2. When domains change, the parent component handles clearing clusters
       } catch (error) {
         console.error('Error loading clusters:', error);
         setClusters([]);

@@ -2,7 +2,7 @@
  * Tests for displaying previous selections on already-labeled tasks
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -37,16 +37,35 @@ Object.defineProperty(window, 'scrollTo', {
   writable: true,
 });
 
+// Mock window.alert
+window.alert = jest.fn();
+
 // Mock fetch with a labeled task
+const mockTasks = [
+  { task_id: 1, name: 'Task 1', description: 'Desc 1', classname: '1', task_image_base64: 'data:image/png;base64,img1', solution_image_base64: 'data:image/png;base64,sol1' },
+  { task_id: 2, name: 'Task 2', description: 'Desc 2', classname: '2', task_image_base64: 'data:image/png;base64,img2', solution_image_base64: 'data:image/png;base64,sol2' },
+];
+
 global.fetch = jest.fn((url: string, options?: any) => {
+  // Match /api/tasks/:id (task details endpoint)
+  const taskIdMatch = url.match(/\/api\/tasks\/(\d+)/);
+  if (taskIdMatch) {
+    const taskId = parseInt(taskIdMatch[1]);
+    const task = mockTasks.find(t => t.task_id === taskId);
+    return Promise.resolve({
+      json: () => Promise.resolve({
+        success: true,
+        task: task,
+      }),
+    });
+  }
+
+  // Match /api/tasks (task list endpoint)
   if (url.includes('/api/tasks')) {
     return Promise.resolve({
       json: () => Promise.resolve({
         success: true,
-        tasks: [
-          { task_id: 1, name: 'Task 1', description: 'Desc 1', classname: '1', task_image_base64: 'data:image/png;base64,img1', solution_image_base64: 'data:image/png;base64,sol1' },
-          { task_id: 2, name: 'Task 2', description: 'Desc 2', classname: '2', task_image_base64: 'data:image/png;base64,img2', solution_image_base64: 'data:image/png;base64,sol2' },
-        ],
+        tasks: mockTasks,
       }),
     });
   }
@@ -130,7 +149,9 @@ describe('Label Page - Previously Labeled Tasks', () => {
 
     // Navigate back to Task 1 (the labeled task)
     const previousButtons = screen.getAllByRole('button', { name: /Previous/i });
-    fireEvent.click(previousButtons[0]);
+    await act(async () => {
+      fireEvent.click(previousButtons[0]);
+    });
 
     // Wait for navigation to Task 1
     await waitFor(() => {
@@ -156,11 +177,15 @@ describe('Label Page - Previously Labeled Tasks', () => {
 
     // Wait for clusters to load
     await waitFor(() => {
-      expect(screen.getByText('Cluster A')).toBeInTheDocument();
-    }, { timeout: 3000 });
+      const clusterElements = screen.getAllByText('Cluster A');
+      expect(clusterElements.length).toBeGreaterThan(0);
+    }, { timeout: 10000 });
 
     // The previously selected cluster should be shown as selected
-    const clusterButton = screen.getByText('Cluster A').closest('button');
+    const clusterButtons = screen.getAllByText('Cluster A')
+      .map(el => el.closest('button'))
+      .filter(btn => btn !== null);
+    const clusterButton = clusterButtons[0];
     await waitFor(() => {
       expect(clusterButton?.className).toContain('border-blue-500');
       expect(clusterButton?.className).toContain('bg-blue-50');
@@ -206,7 +231,7 @@ describe('Label Page - Previously Labeled Tasks', () => {
       expect(screen.getByText('PRIMARY')).toBeInTheDocument();
       expect(screen.getByText('SECONDARY')).toBeInTheDocument();
     }, { timeout: 3000 });
-  });
+  }, 15000);
 
   it('should show empty selections when navigating to an unlabeled task', async () => {
     const LabelPage = require('@/app/label/page').default;

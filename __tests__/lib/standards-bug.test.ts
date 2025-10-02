@@ -141,34 +141,31 @@ describe('Domain Deduplication Bug', () => {
   });
 
   describe('User experience impact', () => {
-    it('demonstrates the user cannot access 1.NBT through the domain selector', () => {
+    it('verifies the user CAN now access all NBT domains through the domain selector', () => {
       // Step 1: User sees domains list
       const domains = navigator.getDomains();
       const nbtDomains = domains.filter(d => d.name === 'NBT');
 
-      // User only sees ONE NBT option
-      expect(nbtDomains).toHaveLength(1);
+      // User now sees ALL NBT options (bug is fixed!)
+      expect(nbtDomains.length).toBeGreaterThan(1);
 
-      // Step 2: User clicks on NBT (which is K.NBT)
-      const selectedDomainId = nbtDomains[0].id;
-      expect(selectedDomainId).toBe('K.NBT');
+      // Step 2: User can specifically select 1.NBT
+      const firstGradeNbt = nbtDomains.find(d => d.id === '1.NBT');
+      expect(firstGradeNbt).toBeDefined();
+      expect(firstGradeNbt?.id).toBe('1.NBT');
 
-      // Step 3: System loads clusters for K.NBT
-      const clusters = navigator.getClusters(selectedDomainId);
+      // Step 3: System loads clusters for 1.NBT
+      const clusters = navigator.getClusters('1.NBT');
 
-      // User only sees K.NBT.A
-      expect(clusters).toHaveLength(1);
-      expect(clusters[0].id).toBe('K.NBT.A');
+      // User can now see all 1.NBT clusters
+      expect(clusters.length).toBe(3);
+      expect(clusters.every(c => c.parent_domain === '1.NBT')).toBe(true);
 
-      // Step 4: User cannot access 1.NBT.A, 1.NBT.B, 1.NBT.C
-      // because 1.NBT was never shown in the domain list!
+      // Step 4: Verify all expected 1.NBT clusters are present
+      const clusterIds = clusters.map(c => c.id).sort();
+      expect(clusterIds).toEqual(['1.NBT.A', '1.NBT.B', '1.NBT.C']);
 
-      // This is the BUG: 1.NBT clusters are inaccessible
-      const firstGradeClusters = navigator.getClusters('1.NBT');
-      expect(firstGradeClusters).toHaveLength(3);
-
-      // But user has no way to request '1.NBT' in the UI
-      // because it's not in the domains list
+      // Bug is FIXED: User now has full access to all grade-level specific domains
     });
   });
 

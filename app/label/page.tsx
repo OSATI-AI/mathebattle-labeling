@@ -13,52 +13,40 @@ interface RankedStandard {
 }
 
 /**
- * Main labeling interface
+ * Simplified labeling interface
  *
- * Features:
- * - Display current task with images
- * - Hierarchical selection: domains → clusters → standards
- * - Ranking interface for multiple standards
- * - Submit button with validation
- * - Progress tracking with localStorage
- * - Navigation: Previous/Next task
- * - Time tracking per task
+ * Flow:
+ * 1. Load tasks list
+ * 2. For each task: fetch task details + label from Supabase
+ * 3. Submit: write to Supabase + navigate
  */
 export default function LabelPage() {
   const router = useRouter();
 
-  // User state
+  // User
   const [labelerId, setLabelerId] = useState<string>('');
 
-  // Task state
+  // Tasks
   const [tasks, setTasks] = useState<TaskWithImages[]>([]);
-  const [currentTask, setCurrentTask] = useState<TaskWithImages | null>(null);
   const [currentTaskIndex, setCurrentTaskIndex] = useState<number>(0);
-  const [labeledTaskIds, setLabeledTaskIds] = useState<Set<number>>(new Set());
-  const [labels, setLabels] = useState<Label[]>([]);
+  const [currentTask, setCurrentTask] = useState<TaskWithImages | null>(null);
+  const [currentLabel, setCurrentLabel] = useState<Label | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingTaskImages, setLoadingTaskImages] = useState(false);
+  const [loadingTask, setLoadingTask] = useState(false);
 
-  // Task cache for preloading
-  const [taskCache, setTaskCache] = useState<Map<number, TaskWithImages>>(new Map());
-
-  // Time tracking
-  const [startTime, setStartTime] = useState<number>(Date.now());
+  // Labeled task count (for progress display)
+  const [labeledCount, setLabeledCount] = useState<number>(0);
 
   // Selection state
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
   const [selectedClusters, setSelectedClusters] = useState<string[]>([]);
   const [rankedStandards, setRankedStandards] = useState<RankedStandard[]>([]);
 
-  // Initial values for HierarchicalSelector (calculated when task loads)
-  const [initialDomainsForTask, setInitialDomainsForTask] = useState<string[]>([]);
-  const [initialClustersForTask, setInitialClustersForTask] = useState<string[]>([]);
-  const [initialStandardsForTask, setInitialStandardsForTask] = useState<RankedStandard[]>([]);
-
-  // Submission state
+  // Time tracking
+  const [startTime, setStartTime] = useState<number>(Date.now());
   const [submitting, setSubmitting] = useState(false);
 
-  // Load labeler ID and redirect if not set
+  // Get labeler ID
   useEffect(() => {
     const id = localStorage.getItem('labeler_id');
     if (!id) {
@@ -68,144 +56,91 @@ export default function LabelPage() {
     setLabelerId(id);
   }, [router]);
 
-  // Load tasks and progress
+  // Load tasks list and find first unlabeled
   useEffect(() => {
     if (!labelerId) return;
 
-    const loadTasksAndProgress = async () => {
+    const loadTasks = async () => {
       setLoading(true);
       try {
-        // Load all tasks
-        const tasksResponse = await fetch('/api/tasks');
-        const tasksData = await tasksResponse.json();
+        // Get tasks
+        const tasksRes = await fetch('/api/tasks');
+        const tasksData = await tasksRes.json();
 
-        if (tasksData.success && tasksData.tasks) {
-          setTasks(tasksData.tasks);
+        if (!tasksData.success || !tasksData.tasks) {
+          console.error('Failed to load tasks');
+          return;
+        }
 
-          // Load labeler's progress
-          const progressResponse = await fetch(`/api/labels?labeler_id=${labelerId}`);
-          const progressData = await progressResponse.json();
+        setTasks(tasksData.tasks);
 
-          if (progressData.success && progressData.labeled_task_ids) {
-            const labeledIds = new Set<number>(progressData.labeled_task_ids);
-            setLabeledTaskIds(labeledIds);
+        // Get all labels to find first unlabeled task
+        const labelsRes = await fetch(`/api/labels?labeler_id=${labelerId}`);
+        const labelsData = await labelsRes.json();
 
-            // Store all labels for retrieval
-            if (progressData.labels) {
-              setLabels(progressData.labels);
-            }
+        let startIndex = 0;
+        if (labelsData.success && labelsData.labeled_task_ids) {
+          const labeledIds = new Set(labelsData.labeled_task_ids);
+          setLabeledCount(labeledIds.size);
 
-            // Find first unlabeled task
-            const firstUnlabeledIndex = tasksData.tasks.findIndex(
-              (task: TaskWithImages) => !labeledIds.has(task.task_id)
-            );
-
-            if (firstUnlabeledIndex !== -1) {
-              setCurrentTaskIndex(firstUnlabeledIndex);
-            }
+          // Find first unlabeled
+          const firstUnlabeled = tasksData.tasks.findIndex(
+            (t: TaskWithImages) => !labeledIds.has(t.task_id)
+          );
+          if (firstUnlabeled !== -1) {
+            startIndex = firstUnlabeled;
           }
         }
+
+        setCurrentTaskIndex(startIndex);
       } catch (error) {
-        console.error('Error loading tasks and progress:', error);
+        console.error('Error loading tasks:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadTasksAndProgress();
+    loadTasks();
   }, [labelerId]);
 
-  // Load current task images when task index changes (with caching and preloading)
+  // Load current task + its label when index changes
   useEffect(() => {
-    if (tasks.length === 0 || currentTaskIndex >= tasks.length) {
-      setCurrentTask(null);
-      return;
-    }
+    if (tasks.length === 0 || currentTaskIndex >= tasks.length) return;
 
-    const loadTaskImages = async (taskId: number) => {
-      const response = await fetch(`/api/tasks/${taskId}`);
-      const data = await response.json();
-      if (data.success && data.task) {
-        return data.task;
-      }
-      return null;
-    };
-
-    const loadCurrentTaskImages = async () => {
+    const loadTaskAndLabel = async () => {
+      setLoadingTask(true);
       const taskId = tasks[currentTaskIndex].task_id;
 
-      // Check cache first
-      if (taskCache.has(taskId)) {
-        const task = taskCache.get(taskId)!;
-        setCurrentTask(task);
-        setLoadingTaskImages(false);
+      try {
+        // Load task details with images
+        const taskRes = await fetch(`/api/tasks/${taskId}`);
+        const taskData = await taskRes.json();
 
-        // BUGFIX: Calculate initial values here, when we know the task is correct
-        const isTaskLabeled = labeledTaskIds.has(task.task_id);
-        const taskLabel = isTaskLabeled ? labels.find(label => label.task_id === task.task_id) : undefined;
-        setInitialDomainsForTask(taskLabel?.selected_domains || []);
-        setInitialClustersForTask(taskLabel?.selected_clusters || []);
-        setInitialStandardsForTask(taskLabel?.selected_standards || []);
-      } else {
-        setLoadingTaskImages(true);
-        try {
-          const task = await loadTaskImages(taskId);
-          if (task) {
-            setCurrentTask(task);
-
-            // BUGFIX: Calculate initial values here, when we know the task is correct
-            const isTaskLabeled = labeledTaskIds.has(task.task_id);
-            const taskLabel = isTaskLabeled ? labels.find(label => label.task_id === task.task_id) : undefined;
-            setInitialDomainsForTask(taskLabel?.selected_domains || []);
-            setInitialClustersForTask(taskLabel?.selected_clusters || []);
-            setInitialStandardsForTask(taskLabel?.selected_standards || []);
-
-            // Cache the task
-            setTaskCache(prev => new Map(prev).set(taskId, task));
-          }
-        } catch (error) {
-          console.error('Error loading task images:', error);
-        } finally {
-          setLoadingTaskImages(false);
+        if (taskData.success && taskData.task) {
+          setCurrentTask(taskData.task);
         }
-      }
 
-      // Preload next task in background
-      if (currentTaskIndex < tasks.length - 1) {
-        const nextTaskId = tasks[currentTaskIndex + 1].task_id;
-        if (!taskCache.has(nextTaskId)) {
-          loadTaskImages(nextTaskId).then(task => {
-            if (task) {
-              setTaskCache(prev => new Map(prev).set(nextTaskId, task));
-            }
-          }).catch(err => {
-            console.log('Preload failed for task', nextTaskId, err);
-          });
-        }
-      }
+        // Load label for this specific task
+        const labelRes = await fetch(`/api/labels?labeler_id=${labelerId}`);
+        const labelData = await labelRes.json();
 
-      // Preload previous task in background
-      if (currentTaskIndex > 0) {
-        const prevTaskId = tasks[currentTaskIndex - 1].task_id;
-        if (!taskCache.has(prevTaskId)) {
-          loadTaskImages(prevTaskId).then(task => {
-            if (task) {
-              setTaskCache(prev => new Map(prev).set(prevTaskId, task));
-            }
-          }).catch(err => {
-            console.log('Preload failed for task', prevTaskId, err);
-          });
+        if (labelData.success && labelData.labels) {
+          const label = labelData.labels.find((l: Label) => l.task_id === taskId);
+          setCurrentLabel(label || null);
+        } else {
+          setCurrentLabel(null);
         }
+      } catch (error) {
+        console.error('Error loading task/label:', error);
+        setCurrentLabel(null);
+      } finally {
+        setLoadingTask(false);
       }
     };
 
-    loadCurrentTaskImages();
-  }, [currentTaskIndex, tasks, taskCache, labeledTaskIds, labels]);
-
-  // Reset timer when task changes
-  useEffect(() => {
-    setStartTime(Date.now());
-  }, [currentTaskIndex]);
+    loadTaskAndLabel();
+    setStartTime(Date.now()); // Reset timer
+  }, [currentTaskIndex, tasks, labelerId]);
 
   const handleSelectionChange = useCallback((selection: {
     domains: string[];
@@ -215,10 +150,9 @@ export default function LabelPage() {
     setSelectedDomains(selection.domains);
     setSelectedClusters(selection.clusters);
     setRankedStandards(selection.rankedStandards);
-  }, []); // No dependencies - setters are stable
+  }, []);
 
   const handleSubmit = async () => {
-    // Validation
     if (rankedStandards.length === 0) {
       alert('Please select and rank at least one standard before submitting.');
       return;
@@ -250,37 +184,16 @@ export default function LabelPage() {
       const data = await response.json();
 
       if (data.success) {
-        // Refetch labels to get the updated list
-        const progressResponse = await fetch(`/api/labels?labeler_id=${labelerId}`);
-        const progressData = await progressResponse.json();
+        // Update labeled count
+        setLabeledCount(prev => currentLabel ? prev : prev + 1);
 
-        let newLabeledIds = labeledTaskIds;
-        let newLabels = labels;
+        // Clear current state before navigation to prevent stale data
+        setCurrentLabel(null);
+        setCurrentTask(null);
 
-        if (progressData.success) {
-          // Update labeled task IDs
-          if (progressData.labeled_task_ids) {
-            newLabeledIds = new Set<number>(progressData.labeled_task_ids);
-            setLabeledTaskIds(newLabeledIds);
-          }
-
-          // Update labels array
-          if (progressData.labels) {
-            newLabels = progressData.labels;
-            setLabels(progressData.labels);
-          }
-        }
-
-        // Navigate to next task (with updated labeled IDs)
+        // Navigate to next task
         if (currentTaskIndex < tasks.length - 1) {
-          const newIndex = currentTaskIndex + 1;
-          setCurrentTaskIndex(newIndex);
-
-          // Note: Parent state (selectedDomains, selectedClusters, rankedStandards) will be
-          // automatically updated by HierarchicalSelector's onSelectionComplete callback
-          // when it mounts with the new task's initial values
-
-          // Scroll to top
+          setCurrentTaskIndex(currentTaskIndex + 1);
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }
       } else {
@@ -296,26 +209,14 @@ export default function LabelPage() {
 
   const handlePrevious = () => {
     if (currentTaskIndex > 0) {
-      const newIndex = currentTaskIndex - 1;
-      setCurrentTaskIndex(newIndex);
-
-      // Note: Parent state will be automatically updated by HierarchicalSelector's callback
-      // when it mounts with the previous task's initial values
-
-      // Scroll to top
+      setCurrentTaskIndex(currentTaskIndex - 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
   const handleNext = () => {
     if (currentTaskIndex < tasks.length - 1) {
-      const newIndex = currentTaskIndex + 1;
-      setCurrentTaskIndex(newIndex);
-
-      // Note: Parent state will be automatically updated by HierarchicalSelector's callback
-      // when it mounts with the next task's initial values
-
-      // Scroll to top
+      setCurrentTaskIndex(currentTaskIndex + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -362,10 +263,10 @@ export default function LabelPage() {
         <ProgressBar
           current={currentTaskIndex + 1}
           total={tasks.length}
-          labeledCount={labeledTaskIds.size}
+          labeledCount={labeledCount}
         />
 
-        {/* Top Navigation Buttons */}
+        {/* Top Navigation */}
         <div className="flex gap-4 items-center justify-between bg-white rounded-lg shadow-md p-4">
           <button
             onClick={handlePrevious}
@@ -389,10 +290,10 @@ export default function LabelPage() {
         </div>
 
         {/* Task Display */}
-        <TaskDisplay task={currentTask} loading={loadingTaskImages} />
+        <TaskDisplay task={currentTask} loading={loadingTask} />
 
-        {/* Status indicator */}
-        {currentTask && labeledTaskIds.has(currentTask.task_id) && (
+        {/* Already Labeled Indicator */}
+        {currentLabel && (
           <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded">
             ✓ This task has already been labeled by you.
           </div>
@@ -402,10 +303,10 @@ export default function LabelPage() {
         <HierarchicalSelector
           key={currentTaskIndex}
           onSelectionComplete={handleSelectionChange}
-          disabled={submitting}
-          initialDomains={initialDomainsForTask}
-          initialClusters={initialClustersForTask}
-          initialStandards={initialStandardsForTask}
+          disabled={submitting || loadingTask}
+          initialDomains={currentLabel?.selected_domains || []}
+          initialClusters={currentLabel?.selected_clusters || []}
+          initialStandards={currentLabel?.selected_standards || []}
         />
 
         {/* Action Buttons */}
