@@ -1,2 +1,40 @@
-# Exclude large database file - will be fetched from Blob storage
-data/database/*.db
+# Test files
+__tests__
+e2e
+test-results
+playwright-report
+*.test.*
+*.spec.*
+jest.config.js
+jest.setup.js
+playwright.config.ts
+
+# Development files
+*.log
+.env.local
+.env.development
+debug-*
+test-*
+
+# Git files
+.git
+.gitignore
+
+# Documentation
+*.md
+
+# Node modules that should be installed fresh
+node_modules/.cache
+
+# Source control
+.vscode
+.idea
+
+# Temporary files
+tmp
+temp
+*.tmp
+
+# Build artifacts that will be generated
+.next
+tsconfig.tsbuildinfo

@@ -12,22 +12,26 @@ export class StandardsNavigator {
     this.standards = new Map();
 
     // Try multiple paths for Vercel compatibility
-    let resolvedPath = path.resolve(process.cwd(), jsonlPath);
+    // First try public directory (for Vercel deployment)
+    let resolvedPath = path.resolve(process.cwd(), 'public', jsonlPath);
 
-    // If file doesn't exist, try alternate paths
     if (!fs.existsSync(resolvedPath)) {
-      // Try public directory (static files)
-      const publicPath = path.resolve(process.cwd(), 'public', jsonlPath);
-      if (fs.existsSync(publicPath)) {
-        resolvedPath = publicPath;
-      } else {
-        // Try .next/server path (where we copy files during build)
-        const serverPath = path.resolve(process.cwd(), '.next/server', jsonlPath);
-        if (fs.existsSync(serverPath)) {
-          resolvedPath = serverPath;
+      // Try direct path
+      resolvedPath = path.resolve(process.cwd(), jsonlPath);
+
+      if (!fs.existsSync(resolvedPath)) {
+        // Try public/standards directory
+        const publicStandardsPath = path.resolve(process.cwd(), 'public/standards', path.basename(jsonlPath));
+        if (fs.existsSync(publicStandardsPath)) {
+          resolvedPath = publicStandardsPath;
         } else {
-          // Try looking in parent directory (for Vercel serverless)
-          const parentPath = path.resolve(process.cwd(), '..', jsonlPath);
+          // Try .next/server path (where we copy files during build)
+          const serverPath = path.resolve(process.cwd(), '.next/server', jsonlPath);
+          if (fs.existsSync(serverPath)) {
+            resolvedPath = serverPath;
+          } else {
+            // Try looking in parent directory (for Vercel serverless)
+            const parentPath = path.resolve(process.cwd(), '..', jsonlPath);
           if (fs.existsSync(parentPath)) {
             resolvedPath = parentPath;
           }
