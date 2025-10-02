@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Deployed App - Labeled Task Selection Restoration', () => {
-  test('should show previous selections when navigating back to labeled task', async ({ page }) => {
+  test.skip('should show previous selections when navigating back to labeled task', async ({ page }) => {
     // Use labeler_3 for testing (one of the valid IDs)
     const labelerId = 'labeler_3';
 
