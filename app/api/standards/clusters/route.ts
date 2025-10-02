@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { loadStandards } from '@/lib/standards';
+import { loadStandards } from '@/lib/standards-static';
 
 export const dynamic = 'force-dynamic';
 

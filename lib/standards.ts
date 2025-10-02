@@ -32,8 +32,9 @@ export class StandardsNavigator {
           } else {
             // Try looking in parent directory (for Vercel serverless)
             const parentPath = path.resolve(process.cwd(), '..', jsonlPath);
-          if (fs.existsSync(parentPath)) {
-            resolvedPath = parentPath;
+            if (fs.existsSync(parentPath)) {
+              resolvedPath = parentPath;
+            }
           }
         }
       }
