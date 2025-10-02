@@ -7,7 +7,10 @@ import RankingInterface from '@/components/RankingInterface';
 
 describe('RankingInterface', () => {
   const mockOnRankingChange = jest.fn();
-  const mockGetStandardDescription = jest.fn((id: string) => `Description for ${id}`);
+  const mockGetStandardDescription = jest.fn((id: string) => ({
+    description: `Description for ${id}`,
+    description_de: `Beschreibung für ${id}`
+  }));
 
   beforeEach(() => {
     mockOnRankingChange.mockClear();
@@ -78,6 +81,10 @@ describe('RankingInterface', () => {
       />
     );
 
+    // Check for both German and English descriptions with their labels
+    expect(screen.getByText('DE:')).toBeInTheDocument();
+    expect(screen.getByText('Beschreibung für CCSS.MATH.1.OA.A.1')).toBeInTheDocument();
+    expect(screen.getByText('EN:')).toBeInTheDocument();
     expect(screen.getByText('Description for CCSS.MATH.1.OA.A.1')).toBeInTheDocument();
   });
 

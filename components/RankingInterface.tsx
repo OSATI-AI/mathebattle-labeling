@@ -5,11 +5,16 @@ interface RankedStandard {
   rank: number;
 }
 
+export interface StandardDescriptions {
+  description?: string;
+  description_de?: string;
+}
+
 interface RankingInterfaceProps {
   selectedStandards: string[];
   rankedStandards: RankedStandard[];
   onRankingChange: (ranked: RankedStandard[]) => void;
-  getStandardDescription?: (standardId: string) => string;
+  getStandardDescription?: (standardId: string) => StandardDescriptions;
   disabled?: boolean;
 }
 
@@ -145,8 +150,24 @@ export default function RankingInterface({
                 )}
               </div>
               {getStandardDescription && (
-                <div className="text-xs text-gray-600 truncate">
-                  {getStandardDescription(item.standard_id)}
+                <div className="space-y-1">
+                  {(() => {
+                    const descriptions = getStandardDescription(item.standard_id);
+                    return (
+                      <>
+                        {descriptions.description_de && (
+                          <div className="text-xs text-gray-700">
+                            <span className="font-medium text-gray-500">DE:</span> {descriptions.description_de}
+                          </div>
+                        )}
+                        {descriptions.description && (
+                          <div className="text-xs text-gray-600">
+                            <span className="font-medium text-gray-500">EN:</span> {descriptions.description}
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>

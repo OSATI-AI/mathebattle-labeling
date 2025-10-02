@@ -54,8 +54,8 @@ export default function HierarchicalSelector({
   );
   const [rankedStandards, setRankedStandards] = useState<RankedStandard[]>(initialStandards || []);
 
-  // Standard descriptions for ranking interface
-  const [standardDescriptions, setStandardDescriptions] = useState<Map<string, string>>(new Map());
+  // Standard descriptions for ranking interface (storing both German and English)
+  const [standardDescriptions, setStandardDescriptions] = useState<Map<string, { description?: string; description_de?: string }>>(new Map());
 
   // Track previous prop values to detect genuine prop changes
   const prevPropsRef = useRef({
@@ -133,7 +133,7 @@ export default function HierarchicalSelector({
     const loadStandardDescriptions = async () => {
       if (selectedClusters.length === 0) return;
 
-      const newDescriptions = new Map<string, string>();
+      const newDescriptions = new Map<string, { description?: string; description_de?: string }>();
 
       for (const clusterId of selectedClusters) {
         try {
@@ -142,7 +142,10 @@ export default function HierarchicalSelector({
 
           if (data.success && data.standards) {
             data.standards.forEach((standard: any) => {
-              newDescriptions.set(standard.id, standard.description);
+              newDescriptions.set(standard.id, {
+                description: standard.description,
+                description_de: standard.description_de
+              });
             });
           }
         } catch (error) {
@@ -156,8 +159,8 @@ export default function HierarchicalSelector({
     loadStandardDescriptions();
   }, [selectedClusters]);
 
-  const getStandardDescription = (standardId: string): string => {
-    return standardDescriptions.get(standardId) || '';
+  const getStandardDescription = (standardId: string): { description?: string; description_de?: string } => {
+    return standardDescriptions.get(standardId) || {};
   };
 
   if (loadingDomains) {
