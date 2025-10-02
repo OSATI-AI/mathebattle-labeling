@@ -81,15 +81,13 @@ export async function loadTask(taskId: number): Promise<TaskWithImages | null> {
       return null;
     }
 
-    // Load images from public folder (served by Next.js)
-    // In production, these will be deployed to Vercel and cached by their CDN
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || '';
+    // Load images from blob storage
     const [taskImageResponse, solutionImageResponse] = await Promise.all([
-      fetch(`${baseUrl}/images/task-${taskId}-task.png`, {
+      fetch(`${IMAGES_BASE_URL}/images/task-${taskId}-task.png`, {
         // Cache images for 24 hours
         next: { revalidate: 86400 },
       }),
-      fetch(`${baseUrl}/images/task-${taskId}-solution.png`, {
+      fetch(`${IMAGES_BASE_URL}/images/task-${taskId}-solution.png`, {
         // Cache images for 24 hours
         next: { revalidate: 86400 },
       }),
