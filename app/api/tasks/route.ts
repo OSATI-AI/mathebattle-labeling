@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { TaskLoader } from '@/lib/data';
+import { loadTasksMetadata } from '@/lib/blob-data';
 import { seededShuffle } from '@/lib/shuffle';
-import { ensureDatabaseExists } from '@/lib/database-init';
 
 // Force dynamic rendering - do not pre-render this route
 export const dynamic = 'force-dynamic';
@@ -10,21 +9,15 @@ export const revalidate = 0;
 /**
  * GET /api/tasks
  *
- * Returns all tasks with base64-encoded images in a randomized order
+ * Returns all tasks metadata in a randomized order
  * Uses a fixed seed (42) to ensure consistent ordering across all labelers
+ *
+ * Now using Vercel Blob storage instead of SQLite for better performance
  */
 export async function GET() {
-  let loader: TaskLoader | null = null;
-
   try {
-    // Ensure database exists (downloads from Blob if in Vercel environment)
-    const dbPath = await ensureDatabaseExists();
-
-    // Initialize TaskLoader with database path
-    loader = new TaskLoader(dbPath);
-
-    // Get all task metadata (without images to avoid payload size issues)
-    const tasks = loader.getAllTasksMetadata();
+    // Load task metadata from blob storage
+    const tasks = await loadTasksMetadata();
 
     // Shuffle with fixed seed (42) - same order for all labelers
     const shuffledTasks = seededShuffle(tasks, 42);
@@ -44,10 +37,5 @@ export async function GET() {
       },
       { status: 500 }
     );
-  } finally {
-    // Always close the database connection
-    if (loader) {
-      loader.close();
-    }
   }
 }
