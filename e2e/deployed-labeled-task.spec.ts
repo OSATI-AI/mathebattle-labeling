@@ -27,7 +27,13 @@ test.describe('Deployed App - Labeled Task Selection Restoration', () => {
 
     // Wait for clusters to load
     console.log('Step 2: Waiting for clusters...');
-    await page.waitForTimeout(3000); // Give time for API call
+    // Wait for either clusters to appear or "No clusters found" message
+    await Promise.race([
+      page.locator('button').filter({ hasText: /\.CC\./ }).first().waitFor({ state: 'visible', timeout: 15000 }),
+      page.locator('text=No clusters found').waitFor({ state: 'visible', timeout: 15000 }).catch(() => {})
+    ]).catch(() => {
+      // If neither appears, continue and let the count check fail with screenshot
+    });
 
     // Check if clusters loaded
     const clusterCount = await page.locator('button').filter({ hasText: /\.CC\./ }).count();
